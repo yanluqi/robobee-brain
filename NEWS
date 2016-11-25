@@ -1,0 +1,21 @@
+===========================================
+ROBOBEE NEWS --- hystory of visible changes
+===========================================
+
+Changes in 1.0.2:
+
+	-
+
+
+Changes in 1.0.1:
+
+	- New project structure
+	
+	- Added automatic configure genearation and program installation
+	
+	- Compile and run automatically from tun folder
+	
+	- Added OpenGL 3D simulation
+
+
+First 1.0.0: created Autotools project

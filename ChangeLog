@@ -1,0 +1,77 @@
+============================================================================================
+ROBOBEE ChangeLog -- history of new files/folders creation and change (specify new releases)
+============================================================================================
+
+2016 - 11 - 14 Bernardo Fichera <bernardo.fichera@gmail.com>
+	
+	* src/main.cpp: added population vector coding
+
+
+2016 - 11 - 13 Bernardo Fichera <bernardo.fichera@gmail.com>
+	
+	* src/include/receiver.h, src/receiver: new files
+	* src/main.cpp: removed InHandler MUSIC subclass
+	* src/Makefilea.am: add Receiver class compilation
+
+
+2016 - 11 - 11 Bernardo Fichera <bernardo.fichera@gmail.com>
+
+	* RELEASE, TODO: new files
+
+	* NEWS, ChangeLog: start editing
+
+
+2016 - 11 - 09 Bernardo Fichera <bernardo.fichera@gmail.com>
+
+	configure.ac: added AM_CONDITIONAL for macOS compatibility
+
+	src/Makefile.am: added OPENGL variables for macOS compatibility
+
+
+2016 - 11 - 08 Bernardo Fichera <bernardo.fichera@gmail.com>
+
+	* AUTHORS, COPYING, INSTALL, NEWS, README, ChangeLog: new files
+
+	* autogen.sh: new method to generate autotools files
+
+	* buil.sh: added automatic creation of build folder
+	
+
+2016 - 11 - 06 Bernardo Fichera <bernardo.fichera@gmail.com>
+
+	* pynetwork/bee_classes.py: Fixed music output proxies connections for multi-thread simulation (2 or 4)
+
+
+2016 - 11 - 05 Bernardo Fichera <bernardo.fichera@gmail.com>
+	
+	* src/main.cpp: Added Dyanmic Nested Loops to account for arbitrary number of input states and place cells per state
+
+
+2016 - 08 - 18 Bernardo Fichera <bernardo.fichera@gmail.com>
+	
+	* src/main.cpp: output channels separation for place cells information coding
+
+
+2016 - 08 - 17 Bernardo Fichera <bernardo.fichera@gmail.com>
+
+	* graphic: new folder (OpenGL support)
+
+	* configure.ac: added PKG_CHECK_MODULES for GLFW3 library and AC_PROG_RANLIB to use personal library
+	
+
+2016 - 08 - 15 Bernardo Fichera <bernardo.fichera@gmail.com>
+	
+	* pynetwork, run, src: new folders
+
+	* autogen.sh, build.sh, run/run.sh: new files
+
+	* configure.ac, Makefile.am: rewritten from the scratch
+
+	* Release 1.0.1
+
+
+2016 - 02 - 07 Bernardo Fichera <bernardo.fichera@gmail.com>
+
+	* Autotools project created
+
+	* Release 1.0.0

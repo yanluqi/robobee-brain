@@ -1,0 +1,12 @@
+simtime=5.0
+
+[env]
+  binary=./main
+  np=1
+
+[agent]
+  binary=./bee.py
+  np=1
+
+env.p_out -> agent.p_in [50]
+agent.p_out -> env.p_in [210]

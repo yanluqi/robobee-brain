@@ -1,0 +1,9 @@
+===============================================
+ROBOBEE RELEASE --- Checklist for a new release
+===============================================
+
+- edit AC_INIT in configure.ac
+
+- update NEWS and ChangeLog
+
+- version number in README

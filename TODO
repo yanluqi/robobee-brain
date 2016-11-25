@@ -1,0 +1,29 @@
+==================================
+ROBOBEE TODO --- Improvements list
+==================================
+
+- MPI cores/processes handling
+
+- OpenMP cores/threads handling
+
+- Packages checklist in configure.ac for a free errors compilation
+
+- Optimize Writer Class implementing dynamic variables
+
+- Unify Transform and Model classes in graphic package and separate header from methods
+
+- Separate sender from main
+
+- Set ffmpeg parameters
+
+- Preallocate memory for vectors
+
+- Change time step integration RoboBee Dynamics
+
+- MPI support for main.cpp
+
+- Optimize Robobee and Controller class
+
+- Add support for multidimensional actions
+
+- Others...
