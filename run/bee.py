@@ -1,3 +1,5 @@
+#!/usr/local/bin/python
+
 # -*- coding: utf-8 -*-
 #
 # bee.py
@@ -17,8 +19,6 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with RoboBrain.  If not, see <http://www.gnu.org/licenses/>.
-
-#!/usr/local/bin/python
 
 import sys
 sys.path.insert(0,'../pynetwork/')
