@@ -19,4 +19,5 @@ echo autoconf &&
 autoconf &&
 echo automake --copy --add-missing &&
 automake --copy --add-missing &&
+rm -rf README &&
 echo Now run build shell script. It will automatically configure and compile the program.
