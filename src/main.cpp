@@ -653,17 +653,17 @@ int main(int argc, char **argv)
     gp.send1d(toPlot);
     gp << "unset multiplot\n";
     
-    // Reward and Dopaminergic Activity
-    dummy = asprintf(&imagesPath, "set output '%s/rew-dopa.png'\n", fname);
+    // TD error and Dopaminergic Activity
+    dummy = asprintf(&imagesPath, "set output '%s/tderr-dopa.png'\n", fname);
     gp << imagesPath;
     gp << "set multiplot layout 2,1 title 'Reward'\n";
     gp << "set grid ytics lc rgb '#bbbbbb' lw 0.1 lt 0\n";
     gp << "set grid xtics lc rgb '#bbbbbb' lw 0.1 lt 0\n";
 
-    gp << "unset xlabel\nset ylabel 'reward [reward units]'\n";
+    gp << "unset xlabel\nset ylabel 'TD error [reward units]'\n";
     gp << "unset xrange\nset yrange [-50:50]\n";
     gp << "plot '-' with lines notitle\n";
-    toPlot = arma::join_rows(rec_time,envorinment.row(REWARD).t());
+    toPlot = arma::join_rows(rec_time,envorinment.row(TDERROR).t());
     gp.send1d(toPlot);
 
     gp << "set xlabel 'time [s]'\nset ylabel 'Dopaminergic Activity [reward units]'\n";
@@ -673,17 +673,25 @@ int main(int argc, char **argv)
     gp.send1d(toPlot);
     gp << "unset multiplot\n";
 
-    // Value Function
-    dummy = asprintf(&imagesPath, "set output '%s/vFunc.png'\n", fname);
+    // Reward and Value Function
+    dummy = asprintf(&imagesPath, "set output '%s/rew-vFunc.png'\n", fname);
     gp << imagesPath;
+    gp << "set multiplot layout 2,1 notitle\n";
     gp << "set grid ytics lc rgb '#bbbbbb' lw 0.1 lt 0\n";
     gp << "set grid xtics lc rgb '#bbbbbb' lw 0.1 lt 0\n";
+
+    gp << "unset xlabel\nset ylabel 'reward [reward units]'\n";
+    gp << "unset xrange\nset yrange [-50:50]\n";
+    gp << "plot '-' with lines notitle\n";
+    toPlot = arma::join_rows(rec_time,envorinment.row(REWARD).t());
+    gp.send1d(toPlot);
 
     gp << "set xlabel 'time [s]'\nset ylabel 'Value Function'\n";
     gp << "unset xrange\nset yrange [-50:50]\n";
     gp << "plot '-' with lines notitle\n";
     toPlot = arma::join_rows(rec_time,network.row(VALUEFUN).t());
     gp.send1d(toPlot);
+    gp << "unset multiplot\n";
 
     // Policy
     dummy = asprintf(&imagesPath, "set output '%s/policy.png'\n", fname);
