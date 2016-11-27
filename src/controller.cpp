@@ -22,38 +22,84 @@
 #include "include/controller.h"
 
 Controller::Controller(arma::mat& q_desired)
+: b {0.01, 0.01, 0.02}, a {0.001, 1, 0}
 {
-	m = 111e-6;
 	g = 9.81;
+	m = 111e-6;
 	max_f_l = 1.5 * m * g; 
 	max_torque = 2e-6;
-	initialize = 0;
 
 	q_d = q_desired;
+
+	init = 0;
+
+	int dim = sizeof(a)/sizeof(a[0]) - 1;
+	A.zeros(dim,dim);
+	B.zeros(dim,1);
+	C.zeros(1,dim);
+	D.zeros(1,1);
+	x.zeros(dim,1);
+	f_l.zeros(1,1);
+	e.zeros(1,1);
+
+	// General second-order biquad transformation
+	double k = 2/0.001;
+
+	b[0] = (b[0]*std::pow(k,2) + b[1]*k + b[2]) / (a[0]*std::pow(k,2) + a[1]*k + a[2]);
+	b[1] = (2*b[2] - 2*b[0]*std::pow(k,2)) / (a[0]*std::pow(k,2) + a[1]*k + a[2]);
+	b[2] = (b[0]*std::pow(k,2) - b[1]*k + b[2]) / (a[0]*std::pow(k,2) + a[1]*k + a[2]);
+
+	a[0] = 1;
+	a[1] = (2*a[2] - 2*a[0]*std::pow(k,2)) / (a[0]*std::pow(k,2) + a[1]*k + a[2]);
+	a[2] = (a[0]*std::pow(k,2) - a[1]*k + a[2]) / (a[0]*std::pow(k,2) + a[1]*k + a[2]);
+
 }
 
-Controller::~Controller()
-{
-	
-}
+Controller::~Controller() {}
 
 arma::mat Controller::AltitudeControl(arma::mat& q)
 {
-	arma::mat f_l, e;
-
 	e = q_d(8,0) - q(8,0);
 
-	if (!initialize){
-		x.zeros(2,1);
+	if (!init){
 
-		A << 1.904837418035960 << -0.904837418035960 << arma::endr
-	  	  << 1 << 0;
-		B << 1 << arma::endr << 0;
-		C << -0.904685920089069 << 0.904686110414232;
-		D << 9.516741970724031;
+		// Observable Canonical Form
+		// A(0,0) = -a[1];
+		// A(1,0) = -a[2];
+		// A(0,1) = 1;
 
-		f_l << 0;
-		initialize = 1;
+		// B(0,0) = b[1] - a[1]*b[0];
+		// B(1,0) = b[2] - a[2]*b[0];
+
+		// C(0,0) = 1;
+
+		// D(0,0) = b[0];
+
+		// 10000Hz
+		// A(0,0) = 1.904837418035960;
+		// A(1,0) = 1; // 0.5;
+		// A(0,1) = -0.904837418035960;
+
+		// B(0,0) = 1; // 4;
+
+		// C(0,0) = -0.904685920089069;
+		// C(0,1) = 0.904686110414232;
+
+		// D(0,0) = 9.516741970724031;
+
+		// 1000Hz
+		A(0,0) = 1.367879441171442;
+		A(1,0) = 0.5;
+		A(0,1) = -0.7357588823428847;
+
+		B(0,0) = 4;
+
+		C(0,0) = -0.9979390591140898;
+		C(0,1) = 1.995884439433767;
+
+		D(0,0) = 6.324887025108467;
+
+		init = 1;
 	}
 	else{
 		x = A*x + B*e;
@@ -73,8 +119,6 @@ arma::mat Controller::AltitudeControl(arma::mat& q)
 
 arma::mat Controller::DampingControl(arma::mat& q)
 {
-	arma::mat omegabody, tau_c;
-
 	omegabody = q.rows(3,5);
 	tau_c = -2e-7 * omegabody;
 

@@ -28,17 +28,6 @@
 
 class Controller
 {
-	// Contreller Bounds
-public:
-	double max_f_l, max_torque, m, g;
-
-	// Altitude controller variables
-	arma::mat A, B, C, D, x;
-	int initialize;
-
-public:
-	arma::mat q_d;
-
 public:
 	// Constructor
 	Controller(arma::mat& q_desired);
@@ -51,6 +40,20 @@ public:
 	
 	// Damping Controller (Attitude)
 	arma::mat DampingControl(arma::mat& q);
+
+protected:
+
+private:
+
+	int init;
+
+	double g, m, 
+		   max_f_l, b[3], a[3],
+		   max_torque;
+
+	arma::mat q_d,
+			  A, B, C, D, x, f_l, e,
+			  omegabody, tau_c;
 };
 
 #endif
