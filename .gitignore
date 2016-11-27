@@ -58,8 +58,5 @@ run/BeeBrain
 # Python stuff
 *.pyc
 
-# Simulation Outputs
-run/Simulations/*
-
 # Backup files
 *~
