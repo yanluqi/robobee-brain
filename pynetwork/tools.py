@@ -49,13 +49,13 @@ def plotNet(net):
 
   tp.PlotLayer(net.critic, nodesize=30, fig=fig)
   tp.PlotLayer(net.actor, nodesize=30, fig=fig)
-
-  tp.PlotLayer(net.in_rew, nodesize=50, fig=fig)
+  #
+  tp.PlotLayer(net.input_dopa, nodesize=50, fig=fig)
   tp.PlotLayer(net.dopa, nodesize=30, fig=fig)
   tp.PlotLayer(net.vt_dopa, nodesize=50, fig=fig)
-
+  #
   tp.PlotLayer(net.output, nodesize=50, fig=fig)
-  
+
 
   plt.axis([-15.0, 15.0, -9.0, 9.0])
   plt.axes().set_aspect('equal', 'box')
@@ -69,18 +69,18 @@ def plotNet(net):
 def weightMatrix(conn):
   min_first = min(conn)[0]
   max_first = max(conn)[0]
-  
+
   min_second = min(conn)[1]
   max_second = max(conn)[1]
-  
-  
+
+
   n_first = max_first - min_first + 1;
   n_second = max_second - min_second + 1;
-    
+
   W = np.zeros([n_first, n_second])
-  
+
   w_conn = nest.GetStatus(conn, keys='weight')
-  
+
   for idx,n in enumerate(conn):
     W[n[0]-min_first, n[1]-min_second] += w_conn[idx]
 
@@ -92,20 +92,20 @@ def plot3Dweights(W):
   X = np.arange(0, len(W), 1)
   Y = np.arange(0, len(W[0]), 1)
   X, Y = np.meshgrid(Y, X)
-  
+
   surf = ax.plot_surface(X, Y, W, rstride=1, cstride=1, cmap=cm.jet,
                          linewidth=0, antialiased=False)
-  
+
   ax.zaxis.set_major_locator(LinearLocator(10))
   ax.zaxis.set_major_formatter(FormatStrFormatter('%.02f'))
-  
+
   fig.colorbar(surf, shrink=0.5, aspect=5)
-  
+
   # plt.show()
 
 def plot2Dweights(W):
   plt.figure()
-  plt.pcolor(W,cmap=cm.jet)
+  plt.pcolor(W,cmap=cm.jet, vmin=-50, vmax=100)
   plt.colorbar()
 
-  plt.show()
+  # plt.show()
