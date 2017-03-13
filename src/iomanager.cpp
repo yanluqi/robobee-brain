@@ -22,21 +22,14 @@
 
 #include "include/iomanager.h"
 
-Iomanager::Iomanager(std::string& _loadDir, std::string& _saveDir)
-{
-        loadDir = _loadDir + "/";
-        saveDir = _saveDir + "/";
+Iomanager::Iomanager(std::string& _loadDir, std::string& _saveDir){
+  loadDir = _loadDir + "/";
+  saveDir = _saveDir + "/";
 }
 
-Iomanager::Iomanager()
-{
-	
-}
+Iomanager::Iomanager() {}
 
-Iomanager::~Iomanager()
-{
-
-}
+Iomanager::~Iomanager() {}
 
 void Iomanager::PrintData(std::string fname, std::vector <double> *vect){
     std::string path = saveDir + fname;
@@ -46,21 +39,55 @@ void Iomanager::PrintData(std::string fname, std::vector <double> *vect){
         outData << vect->at(i) << std::endl;
 
     outData.close();
-}// end printData
+}// end printData 1D
 
-std::vector <double> Iomanager::ReadData(std::string fname) {
-    std::string path = loadDir + fname;
-    std::ifstream inData (path.c_str());
-    std::vector <double> output;
-    double insert;
+std::vector <double> Iomanager::ReadData(std::string fname)
+{
+  std::string path = loadDir + fname;
+  std::ifstream inData (path.c_str());
+  std::vector <double> output;
+  double insert;
 
-    while(inData){
-        inData >> insert;
-        output.push_back(insert);
-    }
+  while(inData){
+      inData >> insert;
+      output.push_back(insert);
+  }
 
-    inData.close();
-    output.pop_back();
+  inData.close();
+  output.pop_back();
 
-    return output;
-} // end getData
+  return output;
+} // end ReadData 2D
+
+// std::vector<std::vector<double> > Iomanager::ReadData(std::string fname) {
+//   using namespace std;
+//
+//   string path = loadDir + fname;
+//   ifstream file;
+//   file.open(path.c_str(), ios::in | ios::out);
+//
+//   if(!file.is_open())
+//       std::cerr << "Error: Can't open file." << std::endl;
+//
+//   vector<vector<double> > data;
+//   string line;
+//
+//   while(!std::getline(file, line, '\n').eof()) {
+//       istringstream reader(line);
+//       vector<double> lineData;
+//
+//       while(!reader.eof()) {
+//           double val;
+//           reader >> val;
+//
+//           if(reader.fail())
+//               break;
+//
+//           lineData.push_back(val);
+//       }
+//
+//       data.push_back(lineData);
+//       file.close();
+//       return data;
+//   }
+// } // end ReadData 2D
