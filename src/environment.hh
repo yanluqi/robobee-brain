@@ -1,5 +1,5 @@
 /*
- *  encoder.cpp
+ *  environment.h
  *
  *  This file is part of RoboBrain.
  *  Copyright (C) 2016 Bernardo Fichera
@@ -19,33 +19,14 @@
  *
  */
 
-#include "include/encoder.h"
+#ifndef ENVIRONMENT_H
+#define ENVIRONMENT_H
 
-Encoder::Encoder(double window)
-{
-  winLength = window;
-  t = 0;
+#include "include/robobee.h"
+#include "include/controller.h"
+#include "include/sender.h"
+#include "include/receiver.h"
+#include "include/iomanager.h"
+#include "include/plotter.h"
 
-  distribution = new distType(0,0.98);
-  generator = new genType2(42);
-  numberGenerator = new numGen(*generator, *distribution);
-}
-
-Encoder::Encoder () {}
-
-Encoder::~Encoder()
-{
-  delete distribution;
-  delete generator;
-  delete numberGenerator;
-}
-
-void Encoder::PoissonSpikeGenerator(MUSIC::EventOutputPort* outport, double rate, double tickt, int index)
-{
-  t = -log((*numberGenerator)())/rate;
-
-  while (t<winLength) {
-      outport -> insertEvent(tickt+t, MUSIC::GlobalIndex(index));
-      t = t - log((*numberGenerator)())/rate;
-  }
-}
+#endif // ENVIRONMENT_H

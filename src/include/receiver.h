@@ -24,6 +24,7 @@
 
 #include <music.hh>
 #include <vector>
+#include "include/decoder.h"
 
 //Create a son of the class MUSIC::EventHandlerGLobalIndex to receive spikes from network
 class Receiver : public MUSIC::EventHandlerGlobalIndex
@@ -40,13 +41,36 @@ public:
 
 	std::vector <std::vector <double> >* GetSpikes(int pop);
 
-	std::vector < std::vector < std::vector<double> > > storage;
+	void SetCritic(int idPop, double *param);
+	void SetActor(int idPop, double *param);
+	void SetDopa(int idPop, double *param);
+
+	double* GetValue(double tickt, double reward);
+	double GetAction(double tickt);
+	double GetDopa(double tickt);
 
 protected:
 
 private:
+	// Spikes Storing
 	int new_id, pop;
 	std::vector <int> bound;
+	std::vector < std::vector < std::vector<double> > > storage;
+
+	// Spikes Filtering
+	double *value,
+				 sumActor,
+				 policy,
+				 dopaActivity,
+				 *value_param, 	// [A_critic, b_critic, tau_r]
+			 	 *policy_param,	// [F_max, F_min]
+			 	 *dopa_param; 	// [A_dopa, b_dopa]
+
+	int idCritic,
+			idActor,
+			idDopa;
+
+	Decoder *spikeFilter;
 };
 
 #endif // RECEIVER_H

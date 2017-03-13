@@ -21,51 +21,87 @@
 
 #include "include/controller.h"
 
-Controller::Controller(arma::mat& q_desired)
+Controller::Controller(arma::mat& q_desired) // : b {0.01, 0.01, 0.02}, a {0.001, 1, 0}
 {
-	m = 111e-6;
 	g = 9.81;
-	max_f_l = 1.5 * m * g; 
+	m = 111e-6;
+	max_f_l = 1.5 * m * g;
 	max_torque = 2e-6;
-	initialize = 0;
+	T = 0.01;
 
 	q_d = q_desired;
+
+	f_l.zeros(1,1);
+	tauc_e.zeros(3,1);
+	tau_c.zeros(3,1);
+
+	fl_k = new double[3] {0.003, 0, 0};
+	fl_e = new double[3] {0};
+	prev_q = -10;
+	dt = 0.001;
+
+	tauc_k = new double[3] {-1e-6, -2e-7, 0};
+
+	init = 0;
 }
 
 Controller::~Controller()
 {
-	
+	delete fl_k;
+	delete fl_e;
+	delete tauc_k;
 }
 
 arma::mat Controller::AltitudeControl(arma::mat& q)
 {
-	arma::mat f_l, e;
+	fl_e[0] = q_d(8,0) - q(8,0);
+	fl_e[1] = q_d(11,0) - q(11,0);
 
-	e = q_d(8,0) - q(8,0);
+	// if (!init){
+	// 	int dim = 2;
+	// 	A.zeros(dim,dim);
+	// 	B.zeros(dim,1);
+	// 	C.zeros(1,dim);
+	// 	D.zeros(1,1);
+	// 	x.zeros(dim,1);
+	//
+	// 	// 1000Hz
+	// 	A(0,0) = 1.367879441171442;
+	// 	A(1,0) = 0.5;
+	// 	A(0,1) = -0.7357588823428847;
+	// 	B(0,0) = 4;
+	// 	C(0,0) = -0.9979390591140898;
+	// 	C(0,1) = 1.995884439433767;
+	// 	D(0,0) = 6.324887025108467;
+	//
+	// 	// 10000Hz
+	// 	// A(0,0) = 1.904837418035960;
+	// 	// A(1,0) = 1;
+	// 	// A(0,1) = -0.904837418035960;
+	// 	// B(0,0) = 1;
+	// 	// C(0,0) = -0.904685920089069;
+	// 	// C(0,1) = 0.904686110414232;
+	// 	// D(0,0) = 9.516741970724031;
+	//
+	// 	init = 1;
+	// }
+	// else{
+	// 	x = A*x + B*fl_e[0];
+	// 	f_l = C*x + D*fl_e[0];
+	// }
+	//
+	// f_l = f_l + .8*m*g;
+	//
+	// if (f_l(0,0) > max_f_l)
+	// 	f_l(0,0) = max_f_l;
+	// else if (f_l(0,0) < -max_f_l)
+	// 	f_l(0,0) = -max_f_l;
 
-	if (!initialize){
-		x.zeros(2,1);
+	if (prev_q != -10)
+		fl_e[2] = fl_e[2] + ((q_d(8,0) - prev_q) + fl_e[0])*dt/2;
 
-		A << 1.904837418035960 << -0.904837418035960 << arma::endr
-	  	  << 1 << 0;
-		B << 1 << arma::endr << 0;
-		C << -0.904685920089069 << 0.904686110414232;
-		D << 9.516741970724031;
-
-		f_l << 0;
-		initialize = 1;
-	}
-	else{
-		x = A*x + B*e;
-		f_l = C*x + D*e;
-	}
-
-	f_l = f_l + 0.8*m*g;
-
-	if (f_l(0,0) > max_f_l)
-		f_l(0,0) = max_f_l;
-	else if (f_l(0,0) < -max_f_l)
-		f_l(0,0) = -max_f_l;
+	f_l(0,0) = fl_k[0]*fl_e[0] + fl_k[1]*fl_e[1] + fl_k[2]*fl_e[2] + m*g;
+	prev_q = q(8,0);
 
 	return f_l;
 }
@@ -73,10 +109,11 @@ arma::mat Controller::AltitudeControl(arma::mat& q)
 
 arma::mat Controller::DampingControl(arma::mat& q)
 {
-	arma::mat omegabody, tau_c;
+	// Discrete Controller for the deerivative term (q.rows(3,5) -> omegabody)
+	// tau_c = tau_c + 2/T*tauc_k[1]*(q.rows(3,5) - tauc_e);
+	// tauc_e = q.rows(3,5);
 
-	omegabody = q.rows(3,5);
-	tau_c = -2e-7 * omegabody;
+	tau_c = tauc_k[0] * q.rows(0,2) + tauc_k[1] * q.rows(3,5); // thetabody and omegabody
 
 	for (int i; i!=3; ++i){
 		if (tau_c(i,0) > max_torque)
@@ -89,3 +126,33 @@ arma::mat Controller::DampingControl(arma::mat& q)
 
 	return tau_c;
 }
+
+// double a [] = {0.001, 1, 0},
+// 			 b [] = {0.01, 0.01, 0.02};
+//
+// int dim = sizeof(a)/sizeof(a[0]) - 1;
+//
+// for (int i = 0; i < sizeof(a)/sizeof(a[0]); i++)
+// 	a[i] = a[i]/a[0];
+// for (int i = 0; i < sizeof(b)/sizeof(b[0]); i++)
+// 	b[i] = b[i]/a[0];
+
+// Observable Canonical Form
+// for (int i = 0; i < dim; i++) {
+// 	A(i,i+1) = 1;
+// 	A(i,0) = -a[i+1];
+// 	B(i,0) = b[i+1] - a[i+1]*b[0];
+// }
+// C(0,0) = 1;
+// D(0,0) = b[0];
+
+// General second-order biquad transformation
+// double k = 2/0.001;
+//
+// b[0] = (b[0]*std::pow(k,2) + b[1]*k + b[2]) / (a[0]*std::pow(k,2) + a[1]*k + a[2]);
+// b[1] = (2*b[2] - 2*b[0]*std::pow(k,2)) / (a[0]*std::pow(k,2) + a[1]*k + a[2]);
+// b[2] = (b[0]*std::pow(k,2) - b[1]*k + b[2]) / (a[0]*std::pow(k,2) + a[1]*k + a[2]);
+//
+// a[0] = 1;
+// a[1] = (2*a[2] - 2*a[0]*std::pow(k,2)) / (a[0]*std::pow(k,2) + a[1]*k + a[2]);
+// a[2] = (a[0]*std::pow(k,2) - a[1]*k + a[2]) / (a[0]*std::pow(k,2) + a[1]*k + a[2]);

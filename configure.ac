@@ -18,6 +18,7 @@
 
 AC_PREREQ([2.59])
 AC_INIT([RoboBee], [1.0.1])
+AC_CONFIG_HEADERS([config.h])
 AC_CONFIG_SRCDIR([src/main.cpp])
 AM_INIT_AUTOMAKE
 
@@ -26,18 +27,7 @@ AM_CONDITIONAL([DARWIN], [test $(uname) = Darwin])
 AM_PROG_AR
 
 AC_LANG([C++])
-AC_CONFIG_HEADERS([config.h])
-AC_PREFIX_DEFAULT([../run/])
-
 AC_PROG_CXX(mpicxx)
-
-PKG_PROG_PKG_CONFIG
-PKG_CONFIG="$PKG_CONFIG --static"
-
-PKG_CHECK_MODULES([GLFW], [glfw3])
-
-# To use personal libraries
-AC_PROG_RANLIB
 
 AC_CHECK_LIB([music], [_init])
 AC_CHECK_HEADER([music.hh])
@@ -53,6 +43,6 @@ AX_BOOST_IOSTREAMS
 AX_BOOST_SYSTEM
 AX_BOOST_FILESYSTEM
 
-AC_CONFIG_FILES([Makefile graphic/Makefile src/Makefile])
+AC_CONFIG_FILES([Makefile src/Makefile])
 
 AC_OUTPUT

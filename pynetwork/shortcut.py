@@ -24,6 +24,8 @@ from tools import *
 from bee_classes import *
 from param_classes import*
 
+nest.ResetKernel()
+
 box = ParametersBox()
 net = BeeBrain()
 
@@ -31,10 +33,11 @@ net.build(box)
 
 net.connect(box)
 
-conn = nest.GetConnections(nest.GetNodes(net.cortex)[0], nest.GetNodes(net.critic)[0])
+connCritic = nest.GetConnections(nest.GetNodes(net.cortex)[0], nest.GetNodes(net.critic)[0])
+connActor = nest.GetConnections(nest.GetNodes(net.cortex)[0], nest.GetNodes(net.actor)[0])
 
 plotNet(net)
-W = weightMatrix(conn)
+W = weightMatrix(connCritic)
 plot3Dweights(W)
+plot2Dweights(W)
 # plt.show()
-# plot2Dweights(W)

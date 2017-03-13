@@ -52,6 +52,8 @@ Robobee::Robobee(arma::mat& q0, double frequency)
 	q = q0;
 }
 
+Robobee::Robobee() {}
+
 Robobee::~Robobee()
 {
 
@@ -59,10 +61,21 @@ Robobee::~Robobee()
 
 arma::mat Robobee::BeeDynamics(arma::mat& u)
 {
-	arma::mat theta = q.rows(0,2), omegabody = q.rows(3,5), posworld = q.rows(6,8),
-			  vbody = q.rows(9,11), f_l, tau_c = u.rows(1,3), R, W, f_disturb,
-		  	  tau_disturb, f_d, tau_d, g_world, f_g, theta_ks, f, tau, fictitious_f, fictitious_tau,
-		  	  xdotworld, vdotbody, thetadot, omegadotbody, qdot;
+	arma::mat theta = q.rows(0,2),
+						omegabody = q.rows(3,5),
+						posworld = q.rows(6,8),
+						vbody = q.rows(9,11),
+						f_l,
+						tau_c = u.rows(1,3),
+						R, W,
+						f_disturb, tau_disturb,
+						f_d, tau_d,
+						g_world, f_g,
+						theta_ks,
+						f, tau,
+						fictitious_f, fictitious_tau,
+						xdotworld, vdotbody, thetadot, omegadotbody,
+						qdot;
 
 
 	R = RotMatrix(theta);
@@ -72,21 +85,21 @@ arma::mat Robobee::BeeDynamics(arma::mat& u)
 	tau_disturb << torque_bias_x << arma::endr << torque_bias_y << arma::endr << 0;
 
 	BeeAerodynamics(vbody, omegabody, &f_d, &tau_d); // f_d, tau_d
-	
+
 	g_world << 0 << arma::endr << 0 << arma::endr << -g*m;
 	f_g = R.t() * g_world;
 	f_l << 0 << arma::endr << 0 << arma::endr << u(0,0);
 	f = f_l + f_g + f_disturb + f_d;
 
 	theta_ks << theta(0,0) << arma::endr << theta(1,0) << arma::endr << 0;
-	tau = tau_c + tau_d + tau_disturb - ks*theta_ks; 
+	tau = tau_c + tau_d + tau_disturb - ks*theta_ks;
 
 	fictitious_f = m * arma::cross(omegabody, vbody);
 	fictitious_tau = arma::cross(omegabody, Jmat * omegabody);
 
-	xdotworld = R * vbody; 
-	vdotbody = 1/m * (f - fictitious_f); 
-	thetadot = W * omegabody; 
+	xdotworld = R * vbody;
+	vdotbody = 1/m * (f - fictitious_f);
+	thetadot = W * omegabody;
 	omegadotbody = arma::solve(Jmat, tau-fictitious_tau);
 
 	qdot = arma::join_vert(thetadot, omegadotbody);
@@ -105,7 +118,7 @@ arma::mat Robobee::RotMatrix(arma::mat& eulerAngles)
 	double sx, sy, sz, cx, cy, cz;
 	arma::mat R;
 
-	cz = cos(eulerAngles(2,0)); 
+	cz = cos(eulerAngles(2,0));
 	cy = cos(eulerAngles(1,0));
 	cx = cos(eulerAngles(0,0));
 	sz = sin(eulerAngles(2,0));
@@ -116,7 +129,7 @@ arma::mat Robobee::RotMatrix(arma::mat& eulerAngles)
 	  << cy*sz << cz*cx + sz*sy*sx << cx*sz*sy - cz*sx << arma::endr
 	  << -sy << cy*sx << cy*cx;
 
-	return R; 
+	return R;
 }
 
 arma::mat Robobee::Omega2Thetadot(arma::mat& euler_theta)

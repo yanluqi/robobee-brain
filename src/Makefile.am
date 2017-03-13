@@ -21,27 +21,21 @@ EXTRA_DIST = bootstrap
 
 bin_PROGRAMS = main
 
-main_SOURCES = main.cpp \
-			receiver.cpp \
-			iomanager.cpp \
-			decoder.cpp \
-			robobee.cpp \
-			controller.cpp
+main_SOURCES = \
+	main.cpp \
+	sender.cpp \
+	receiver.cpp \
+	encoder.cpp \
+	decoder.cpp \
+	robobee.cpp \
+	controller.cpp \
+	iomanager.cpp \
+	plotter.cpp
 
-if DARWIN
-OPENGL = -framework OPENGL
-else
-OPENGL = -lGL
-endif
-
-GRAPHIC_FLAGS = -lGLEW $(GLFW_LIBS) -lfreetype
-
-main_LDADD = ../graphic/liboglhelper.a \
-			 -larmadillo \
-			 -lmusic \
-			 $(GRAPHIC_FLAGS) \
-   			 $(BOOST_IOSTREAMS_LIB) \
-   			 $(BOOST_SYSTEM_LIB) \
-   			 $(BOOST_FILESYSTEM_LIB)
-
-main_LDFLAGS = $(OPENGL)
+main_LDADD = \
+	-ldynplot \
+	-larmadillo \
+	-lmusic \
+  $(BOOST_IOSTREAMS_LIB) \
+  $(BOOST_SYSTEM_LIB) \
+  $(BOOST_FILESYSTEM_LIB)

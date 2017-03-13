@@ -44,8 +44,8 @@ net.build(box)
 
 # Create connections among nodes
 if LOAD:
-	weightsCritic = np.genfromtxt('data/weightsCritic.out', delimiter=",")
-	weightsAritic = np.genfromtxt('data/weightsActor.out', delimiter=",")
+	weightsCritic = np.genfromtxt('BeeBrain/weightsCritic.dat', delimiter=",")
+	weightsAritic = np.genfromtxt('BeeBrain/weightsActor.dat', delimiter=",")
 	net.connect(box, weightsCritic, weightsAritic)
 else:
 	net.connect(box)
@@ -55,51 +55,74 @@ connCritic = nest.GetConnections(nest.GetNodes(net.cortex)[0], nest.GetNodes(net
 connActor = nest.GetConnections(nest.GetNodes(net.cortex)[0], nest.GetNodes(net.actor)[0])
 
 # Get Actor and Critic weights BEFORE simulation
-wCritic_start = weightMatrix(connCritic)
-wActor_start = weightMatrix(connActor)
-weightsCritic_pre = np.array(nest.GetStatus(connCritic, 'weight'))
-weightsActor_pre = np.array(nest.GetStatus(connActor, 'weight'))
+matCritic_start = weightMatrix(connCritic)
+matActor_start = weightMatrix(connActor)
+weightsCritic_start = np.array(nest.GetStatus(connCritic, 'weight'))
+weightsActor_start = np.array(nest.GetStatus(connActor, 'weight'))
 
 # Run Simulation
 if MONITOR:
 	epoch = 0
 	weight_mean = []
+	dopa_rate = []
 	tempo = []
 	weight_mean.append(np.mean(nest.GetStatus(connCritic, 'weight')))
+	dopa_rate.append(nest.GetStatus(connCritic, 'c')[100])
 	tempo.append(epoch)
 
 	while epoch < simt:
 		net.run(box,1.0)
 		epoch += 1.0
 		weight_mean.append(np.mean(nest.GetStatus(connCritic, 'weight')))
+		dopa_rate.append(nest.GetStatus(connCritic, 'c')[100])
 		tempo.append(epoch)
 
 	plt.figure()
 	plt.plot(tempo, weight_mean)
 	plt.grid(True)
 	plt.savefig('BeeBrain/weightsMean.png', bbox_inches='tight')
-	np.savetxt('BeeBrain/weight_mean.out', weight_mean, delimiter=',')
+	np.savetxt('BeeBrain/weight_mean.dat', weight_mean, delimiter=',')
+
+	plt.figure()
+	plt.plot(tempo, dopa_rate)
+	plt.grid(True)
+	plt.savefig('BeeBrain/dopaRate.png', bbox_inches='tight')
+	np.savetxt('BeeBrain/dopa_rate.dat', dopa_rate, delimiter=',')
 else:
 	net.run(box, simt)
 
 # Get Actor and Critic weights AFTER simulation
-wCritic_end = weightMatrix(connCritic)
-wActor_end = weightMatrix(connActor)
+weightsCritic_end = np.array(nest.GetStatus(connCritic, 'weight'))
+weightsActor_end = np.array(nest.GetStatus(connActor, 'weight'))
+matCritic_end = weightMatrix(connCritic)
+matActor_end = weightMatrix(connActor)
 
 # Plot & Save weights change
-plot3Dweights(wCritic_end - wCritic_start)
-plt.savefig('BeeBrain/weightsCritic.png', bbox_inches='tight')
-plot3Dweights(wActor_end - wActor_start)
-plt.savefig('BeeBrain/weightsActor.png', bbox_inches='tight')
+plot3Dweights(matCritic_end - matCritic_start)
+plt.savefig('BeeBrain/wCriticChange.png', bbox_inches='tight')
+plot3Dweights(matActor_end - matActor_start)
+plt.savefig('BeeBrain/wActorChange.png', bbox_inches='tight')
 
 # Save weights and connections
-weightsCritic_post = np.array(nest.GetStatus(connCritic, 'weight'))
-weightsActor_post = np.array(nest.GetStatus(connActor, 'weight'))
-np.savetxt('BeeBrain/weightsCritic.out', weightsCritic_post, delimiter=',')
-np.savetxt('BeeBrain/weightsActor.out', weightsActor_post, delimiter=',')
-np.savetxt('BeeBrain/connCritic.out', connCritic, delimiter=',')
-np.savetxt('BeeBrain/connActor.out', connActor, delimiter=',')
+np.savetxt('BeeBrain/pCellsIDs.dat', nest.GetNodes(net.cortex)[0], delimiter=',')
+np.savetxt('BeeBrain/criticIDs.dat', nest.GetNodes(net.critic)[0], delimiter=',')
+np.savetxt('BeeBrain/actorIDs.dat', nest.GetNodes(net.actor)[0], delimiter=',')
+
+wr = nest.GetStatus(net.wr, 'events')[0]
+np.savetxt('BeeBrain/weightStory.dat', np.column_stack((wr['senders'],wr['targets'], wr['times'], wr['weights'])), delimiter=',')
+
+np.savetxt('BeeBrain/connCritic.dat', connCritic, delimiter=',')
+np.savetxt('BeeBrain/connActor.dat', connActor, delimiter=',')
+np.savetxt('BeeBrain/weightsCritic_start.dat', weightsCritic_start, delimiter=',')
+np.savetxt('BeeBrain/weightsActor_start.dat', weightsActor_start, delimiter=',')
+np.savetxt('BeeBrain/matCritic_start.dat', matCritic_start, delimiter=',')
+np.savetxt('BeeBrain/matActor_start.dat', matActor_start, delimiter=',')
+np.savetxt('BeeBrain/weightsCritic_end.dat', weightsCritic_end, delimiter=',')
+np.savetxt('BeeBrain/weightsActor_end.dat', weightsActor_end, delimiter=',')
+np.savetxt('BeeBrain/matCritic_end.dat', matCritic_end, delimiter=',')
+np.savetxt('BeeBrain/matActor_end.dat', matActor_end, delimiter=',')
+
 
 # Plot & Save Cortex activity
-nest.raster_plot.from_device(net.sdetector, hist=True)
-plt.savefig('BeeBrain/spikes_cortex.png', bbox_inches='tight')
+# nest.raster_plot.from_device(net.sdetector, hist=True)
+# plt.savefig('BeeBrain/spikes_cortex.png', bbox_inches='tight')

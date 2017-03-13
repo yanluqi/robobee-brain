@@ -28,36 +28,30 @@
 
 class Robobee
 {
+public:
+	Robobee(arma::mat& q0, double frequency); 										// Constructor
+	Robobee();																										// Default
+	~Robobee(); 																									// Destroyer
+	inline void SetState(arma::mat& q) {this->q = q;}							// Set State
+	arma::mat BeeDynamics(arma::mat& u); 													// Bee Dynamic
+
+protected:
+	arma::mat RotMatrix(arma::mat& eulerAngles); 				// Get Rotation Matrix
+	arma::mat Omega2Thetadot(arma::mat& euler_theta); 	// Angular velocity -> Rate of Euler Angles
+	void BeeAerodynamics(arma::mat& v,    							// Get Aerodynamic force
+											 arma::mat& omega,
+											 arma::mat *f_d,
+											 arma::mat *tau_d);
+
+private:
 	// Internal Constant Parameters
 	double winglength, l, h, J, b_w, c_w, r_w, m, g, ks, force_bias_x,
 		   torque_bias_y, gyro_bias_y, force_bias_y, torque_bias_x, gyro_bias_x,
 		   freq, dt;
 
-	arma::mat Jmat;
+	arma::mat Jmat,
+						q;
 
-public:
-	arma::mat q;
-
-// Methods
-
-public:
-	// Constructor
-	Robobee(arma::mat& q0, double frequency);
-	
-	// Destroyer
-	~Robobee();
-	
-	// Bee Dynamic
-	arma::mat BeeDynamics(arma::mat& u);
-
-	// // Get Rotation Matrix
-	arma::mat RotMatrix(arma::mat& eulerAngles);
-
-	// // Angular velocity -> Rate of Euler Angles
-	arma::mat Omega2Thetadot(arma::mat& euler_theta);
-
-	// // Get Aerodynamic force
-	void BeeAerodynamics(arma::mat& v, arma::mat& omega, arma::mat *f_d, arma::mat *tau_d);
 };
 
 #endif

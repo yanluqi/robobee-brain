@@ -62,3 +62,7 @@ run/BeeBrain
 
 # Backup files
 *~
+
+# Editors files
+RoboBrain.sublime-project
+RoboBrain.sublime-workspace
