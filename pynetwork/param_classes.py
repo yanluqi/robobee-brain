@@ -23,22 +23,13 @@
 import numpy as np
 
 class ParametersBox(object):
-	# Number of place cells per state (see n_pCells comment)
-	n_CellsState = [7, 7]
 
-	# Number of critic neurons
-	n_Critic = 50
-	
-	# Number of actor neurons
-	n_Actor = 60
-	
-	# Number of dopaminergic neurons
-	n_Dopa = 100
+	n_CellsState = [7, 7] 	# Number of place cells per state
+	n_Critic = 50 			# Number of critic neurons
+	n_Actor = 60 			# Number of actor neurons
+	n_Dopa = 100 			# Number of dopaminergic neurons
+	calibrated = False 		# Bool variable for calibrate method
 
-	# Get the number of output channels in config file equal to [n_Critic + n_Actor + n_Dopa]
-
-	# Bool variable for calibrate method
-	calibrated = False
 
 	def __init__(self):
 		"""
@@ -47,22 +38,22 @@ class ParametersBox(object):
 		self.params = {}
 
 	def calibrate(self):
-		self.n_pCells =  np.prod(self.n_CellsState)
 		"""
     	Compute all parameter dependent variables of the
     	model.
     	"""
-
-    	# The number of input channels in the config file must be equal to this n_pCells + 1
+		# The number of input channels in the config file must be equal to this
+		# n_pCells + 2 for the dopaminergic neurons stimulation
+		self.n_pCells =  np.prod(self.n_CellsState)
 
 
 											####################
 											# NODES PARAMETERS #
 											####################
 
-	#==================#
-	# RANDOM VARIABLES #
-	#==================#
+#==================#
+# RANDOM VARIABLES #
+#==================#
 	def rand_param(self):
 
 		if not self.calibrated:
@@ -99,11 +90,11 @@ class ParametersBox(object):
 
 		return self.params['rand']
 
-	#===========================#
-	# PLACE CELLS INPUT PROXIES #
-	#===========================#
+#===========================#
+# PLACE CELLS INPUT PROXIES #
+#===========================#
 	def input_sensor(self):
-		
+
 		if not self.calibrated:
 			self.calibrate()
 			self.calibrated = True
@@ -113,13 +104,13 @@ class ParametersBox(object):
 		self.params['input_sensor']['center'] = [2.5, 5.0]
 		self.params['input_sensor']['extent'] = [3.0, 3.0]
 		self.params['input_sensor']['p_name'] = 'p_in'
-		self.params['input_sensor']['latency'] = 0.2
+		self.params['input_sensor']['AccLatency'] = 0.1
 
 		return self.params['input_sensor']
 
-	#=============#
-	# PLACE CELLS #
-	#=============#
+#=============#
+# PLACE CELLS #
+#=============#
 	def cortex(self):
 
 		if not self.calibrated:
@@ -158,7 +149,7 @@ class ParametersBox(object):
  									   			 't_ref'     :     0.5,  # absolute refractory period (ms)
  									   			 'g_L'       : 16.6667,
  									   			 'tau_minus' :    10.0,
-  									   			 'E_ex'      :     0.0,   
+  									   			 'E_ex'      :     0.0,
   									   			 'E_in'      :   -85.0,
         	                     	   			 'tau_syn_ex':     0.2,  # excitatory synaptic time constant (ms)
         	                     	             'tau_syn_in':     2.0  # inhibitory synaptic time constant (ms)
@@ -172,9 +163,9 @@ class ParametersBox(object):
 		return self.params['cortex']
 
 
-	#========#
-	# CRITIC #
-	#========#
+#========#
+# CRITIC #
+#========#
 	def critic(self):
 
 		if not self.calibrated:
@@ -186,7 +177,7 @@ class ParametersBox(object):
 		# MODEL
 		self.params['critic']['copymodel'] = 'iaf_neuron'
 		self.params['critic']['model'] = 'critic_neuron'
-		
+
 		if self.params['critic']['copymodel'] == 'iaf_neuron':
 			self.params['critic']['settings'] = {'C_m'      : 250.0, # (250.0) membrane capacitance (pF)
  									   			'E_L'      : -70.0, # (-70.0) resting membrane potential (mV)
@@ -196,7 +187,7 @@ class ParametersBox(object):
  									   			'V_th'     : -55.0, # (-55.0) spike threshold (mV)
  									   			't_ref'    :   0.5, # (  2.0) absolute refractory period (ms)
  									   			'tau_m'    :  10.0, # ( 10.0) membrane time constant (ms)
- 									   			'tau_minus':  10.0, # ( 20.0)
+ 									   			'tau_minus':  20.0, # ( 20.0)
  									   			'tau_syn'  :   2.0  # (  2.0)
  									   			}
  		elif self.params['critic']['copymodel'] == 'iaf_cond_alpha':
@@ -208,8 +199,8 @@ class ParametersBox(object):
  									   			'V_th'      :   -55.0, # (  -55.0) spike threshold (mV)
  									   			't_ref'     :     0.5, # (    2.0) absolute refractory period (ms)
  									   			'g_L'       : 16.6667, # (16.6667)
- 									   			'tau_minus' :    10.0, # (   20.0)
-  									   			'E_ex'      :     0.0, # (    0.0)   
+ 									   			'tau_minus' :    20.0, # (   20.0)
+  									   			'E_ex'      :     0.0, # (    0.0)
   									   			'E_in'      :   -85.0, # (  -85.0)
         	                     	   			'tau_syn_ex':     0.2, # (    0.2) excitatory synaptic time constant (ms)
         	                     	            'tau_syn_in':     2.0  # (    2.0) inhibitory synaptic time constant (ms)
@@ -219,12 +210,12 @@ class ParametersBox(object):
 		self.params['critic']['number'] = self.n_Critic
 		self.params['critic']['center'] = [0.0, -5.0]
 		self.params['critic']['extent'] = [4.0, 2.0]
-		
+
 		return self.params['critic']
 
-	#=======#
-	# ACTOR #
-	#=======#
+#=======#
+# ACTOR #
+#=======#
 	def actor(self):
 
 		if not self.calibrated:
@@ -236,7 +227,7 @@ class ParametersBox(object):
 		# MODEL
 		self.params['actor']['copymodel'] = 'iaf_neuron'
 		self.params['actor']['model'] = 'actor_neuron'
-		
+
 		if self.params['actor']['copymodel'] == 'iaf_neuron':
 			self.params['actor']['settings'] = {'C_m'      : 250.0, # (250.0) membrane capacitance (pF)
  									   			'E_L'      : -70.0, # (-70.0) resting membrane potential (mV)
@@ -246,7 +237,7 @@ class ParametersBox(object):
  									   			'V_th'     : -55.0, # (-55.0) spike threshold (mV)
  									   			't_ref'    :   0.5, # (  2.0) absolute refractory period (ms)
  									   			'tau_m'    :  10.0, # ( 10.0) membrane time constant (ms)
- 									   			'tau_minus':  40.0, # ( 20.0)
+ 									   			'tau_minus':  20.0, # ( 20.0)
  									   			'tau_syn'  :   2.0  # (  2.0)
  									   			}
  		elif self.params['actor']['copymodel'] == 'iaf_cond_alpha':
@@ -258,8 +249,8 @@ class ParametersBox(object):
  									   			'V_th'      :   -55.0, # (  -55.0) spike threshold (mV)
  									   			't_ref'     :     0.5, # (    2.0) absolute refractory period (ms)
  									   			'g_L'       : 16.6667, # (16.6667)
- 									   			'tau_minus' :    40.0, # (   20.0)
-  									   			'E_ex'      :     0.0, # (    0.0)   
+ 									   			'tau_minus' :    20.0, # (   20.0)
+  									   			'E_ex'      :     0.0, # (    0.0)
   									   			'E_in'      :   -85.0, # (  -85.0)
         	                     	   			'tau_syn_ex':     0.2, # (    0.2) excitatory synaptic time constant (ms)
         	                     	            'tau_syn_in':     2.0  # (    2.0) inhibitory synaptic time constant (ms)
@@ -269,30 +260,31 @@ class ParametersBox(object):
 		self.params['actor']['number'] = self.n_Actor
 		self.params['actor']['center'] = [5.0, -5.0]
 		self.params['actor']['extent'] = [4.0, 2.0]
-		
+
 		return self.params['actor']
 
-	#======================#
-	# REWARD INPUT PROXIES #
-	#======================#
-	def in_rew(self):
+#======================#
+# REWARD INPUT PROXIES #
+#======================#
+	def input_dopa(self):
 
 		if not self.calibrated:
 			self.calibrate()
 			self.calibrated = True
 
-		self.params['in_rew'] = {}
+		self.params['input_dopa'] = {}
 
-		self.params['in_rew']['center'] = [-12.5, 0.0]
-		self.params['in_rew']['channel'] = self.n_pCells
-		self.params['in_rew']['p_name'] = 'p_in'
-		self.params['in_rew']['model'] = 'music_event_in_proxy'
+		self.params['input_dopa']['center'] = [-12.5, 0.0]
+		self.params['input_dopa']['channel_exc'] = self.n_pCells
+		self.params['input_dopa']['channel_inh'] = self.n_pCells + 1
+		self.params['input_dopa']['p_name'] = 'p_in'
+		self.params['input_dopa']['model'] = 'music_event_in_proxy'
 
-		return self.params['in_rew']
+		return self.params['input_dopa']
 
-	#======================#
-	# DOPAMINERGIG NEURONS #
-	#======================#
+#======================#
+# DOPAMINERGIC NEURONS #
+#======================#
 	def dopa_neur(self):
 
 		if not self.calibrated:
@@ -315,9 +307,9 @@ class ParametersBox(object):
 
 		return self.params['dopa_neur']
 
-	#=====================#
-	# VOLUME TRANSMITTERS #
-	#=====================#
+#====================#
+# VOLUME TRANSMITTER #
+#====================#
 	def vt_dopa(self):
 
 		if not self.calibrated:
@@ -331,9 +323,9 @@ class ParametersBox(object):
 
 		return self.params['vt_dopa']
 
-	#================#
-	# OUTPUT PROXIES #
-	#================#
+#==============#
+# OUTPUT PROXY #
+#==============#
 	def output(self):
 
 		if not self.calibrated:
@@ -352,6 +344,47 @@ class ParametersBox(object):
 											# CONNECTIONS PARAMETERS #
 											##########################
 
+#========================#
+# DELAYS STATIC SYNAPSES #
+#========================#
+	def delay(self):
+		if not self.calibrated:
+			self.calibrate()
+			self.calibrated = True
+
+		self.params['delay'] = {}
+
+		self.params['delay']['InProxToPcells'] = 0.1
+		self.params['delay']['InProxToDopa_ex'] = 0.1
+		self.params['delay']['InProxToDopa_in'] = 0.1
+		self.params['delay']['BaseToDopa'] = 0.1
+		self.params['delay']['DopaToVT'] = 0.1
+		self.params['delay']['PopsToOutProx'] = 0.1
+
+		return self.params['delay']
+
+#=========================#
+# WEIGHTS STATIC SYNAPSES #
+#=========================#
+	def weight(self):
+		if not self.calibrated:
+			self.calibrate()
+			self.calibrated = True
+
+		self.params['weight'] = {}
+
+		self.params['weight']['InProxToPcells'] = 1.0
+		self.params['weight']['InProxToDopa_ex'] = 1.0
+		self.params['weight']['InProxToDopa_in'] = -1.0
+		self.params['weight']['BaseToDopa'] = 10.0
+		self.params['weight']['DopaToVT'] = 1.0
+		self.params['weight']['PopsToOutProx'] = 1.0
+
+		return self.params['weight']
+
+#===========================#
+# REWARD MODULATED SYNAPSES #
+#===========================#
 	def plastic(self):
 
 		if not self.calibrated:
@@ -363,12 +396,12 @@ class ParametersBox(object):
 		# Synapse property
 		self.params['plastic']['copymodel'] = 'stdp_dopamine_synapse'
 		self.params['plastic']['model'] = 'plastic'
-		self.params['plastic']['A_minus'] = 0.375
-		self.params['plastic']['A_plus'] = 0.75
+		self.params['plastic']['A_minus'] = 0.05
+		self.params['plastic']['A_plus'] = 0.0475
 		self.params['plastic']['w_max'] = 100.
 		self.params['plastic']['w_min'] = -50.
-		self.params['plastic']['baseline'] = 0.0
-		self.params['plastic']['tau_elegibility'] = 500.
+		self.params['plastic']['baseline'] = 31.734262849737714
+		self.params['plastic']['tau_elegibility'] = 120.
 		self.params['plastic']['tau_dopa'] = 100.
 		self.params['plastic']['tau_plus'] = 20.
 		self.params['plastic']['delay'] = 0.1
