@@ -38,11 +38,6 @@
 #include <mpi.h>
 #include <music.hh>
 
-// Gnuplot Stream
-#include <boost/tuple/tuple.hpp>
-#include <boost/random.hpp>
-#include "gnuplot-iostream.h"
-
 
 #define IN_LATENCY (0.01)
 #define TICK (0.01)

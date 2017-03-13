@@ -17,7 +17,7 @@
 # along with RoboBrain.  If not, see <http://www.gnu.org/licenses/>.
 
 AC_PREREQ([2.59])
-AC_INIT([RoboBee], [1.0.1])
+AC_INIT([RoboBee], [1.0.2])
 AC_CONFIG_HEADERS([config.h])
 AC_CONFIG_SRCDIR([src/main.cpp])
 AM_INIT_AUTOMAKE
