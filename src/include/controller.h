@@ -31,13 +31,13 @@ class Controller
 public:
 	// Constructor
 	Controller(arma::mat& q_desired);
-	
+
 	// Destructor
 	~Controller();
-	
+
 	// Altitude Controller
 	arma::mat AltitudeControl(arma::mat& q);
-	
+
 	// Damping Controller (Attitude)
 	arma::mat DampingControl(arma::mat& q);
 
@@ -47,13 +47,17 @@ private:
 
 	int init;
 
-	double g, m, 
-		   max_f_l, b[3], a[3],
-		   max_torque;
+	double g, m, T,
+				 *fl_e, // e, ed, ei
+				 *fl_k, // k, kd, ki
+				 *tauc_k,
+				 prev_q, dt,
+		   	 max_f_l,
+		   	 max_torque;
 
 	arma::mat q_d,
-			  A, B, C, D, x, f_l, e,
-			  omegabody, tau_c;
+			  A, B, C, D, x, f_l,
+			  omegabody, tau_c, tauc_e;
 };
 
 #endif
