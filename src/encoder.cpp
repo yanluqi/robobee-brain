@@ -21,22 +21,31 @@
 
 #include "include/encoder.h"
 
-encoder::encoder()
+Encoder::Encoder(double window)
 {
+  winLength = window;
+  t = 0;
 
+  distribution = new distType(0,0.98);
+  generator = new genType2(42);
+  numberGenerator = new numGen(*generator, *distribution);
 }
 
-encoder::~encoder()
-{
+Encoder::Encoder () {}
 
+Encoder::~Encoder()
+{
+  delete distribution;
+  delete generator;
+  delete numberGenerator;
 }
 
-void encoder::inh_poisson()
+void Encoder::PoissonSpikeGenerator(MUSIC::EventOutputPort* outport, double rate, double tickt, int index)
 {
+  t = -log((*numberGenerator)())/rate;
 
-}
-
-void encoder::hom_poisson()
-{
-
+  while (t<winLength) {
+      outport -> insertEvent(tickt+t, MUSIC::GlobalIndex(index));
+      t = t - log((*numberGenerator)())/rate;
+  }
 }
