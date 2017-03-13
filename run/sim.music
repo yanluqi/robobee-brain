@@ -8,5 +8,5 @@ simtime=5.0
   binary=./bee.py
   np=1
 
-env.p_out -> agent.p_in [50]
+env.p_out -> agent.p_in [51]
 agent.p_out -> env.p_in [210]
