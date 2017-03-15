@@ -256,7 +256,7 @@ class BeeBrain(object):
       self.build(box)
 
     params = box.plastic()
-    
+
     nest.CopyModel(params['copymodel'], params['model'],
                   {'A_minus': params['A_minus'],
                    'A_plus': params['A_plus'],
@@ -319,7 +319,7 @@ class BeeBrain(object):
     self.cdict_plastic_actor = {'connection_type'       : 'divergent',
                                 'synapse_model'         : 'plastic',
                               # 'number_of_connections' :  50,
-                                'weights'               :  {'uniform': {'min': -50.0, 'max': 100.0}},
+                                'weights'               :  {'uniform': {'min': 0.0, 'max': 100.0}},
                                }
 
     tp.ConnectLayers(self.cortex, self.actor, self.cdict_plastic_actor)
@@ -335,13 +335,12 @@ class BeeBrain(object):
     """
     Lateral connections among actor neurons to reinforce N-winners take all
     """
-    w_max = 30.0
+    w_max = 40.0
     w_min = -60.0
     actors = nest.GetNodes(self.actor)[0]
     self.norm = np.zeros(len(actors))
     curr_weight = 0.0
     l = 0.05
-    # self.rec_weight = np.zeros((60,60))
 
     for i in range(len(actors)):
       for j in range(len(actors)):
@@ -352,7 +351,6 @@ class BeeBrain(object):
       for j, k in enumerate(actors):
         if i!=j:
           curr_weight = w_min/len(actors) + w_max*np.exp(-np.power(i-j,2)*np.power(l,2))/self.norm[i]
-        #   self.rec_weight[i][j] = curr_weight
           nest.Connect([n], [k], "one_to_one", {'weight': curr_weight})
 
 #==========================#
