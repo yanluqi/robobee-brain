@@ -19,7 +19,7 @@
 ACLOCAL_AMFLAGS = -I m4
 EXTRA_DIST = bootstrap
 
-bin_PROGRAMS = main
+bin_PROGRAMS = main analyze
 
 main_SOURCES = \
 	main.cpp \
@@ -37,5 +37,16 @@ main_LDADD = \
 	-larmadillo \
 	-lmusic \
   $(BOOST_IOSTREAMS_LIB) \
+  $(BOOST_SYSTEM_LIB) \
+  $(BOOST_FILESYSTEM_LIB)
+
+analyze_SOURCES = \
+	analyze.cpp \
+	plotter.cpp
+
+analyze_LDADD = \
+	-ldynplot \
+	-larmadillo \
+	$(BOOST_IOSTREAMS_LIB) \
   $(BOOST_SYSTEM_LIB) \
   $(BOOST_FILESYSTEM_LIB)
