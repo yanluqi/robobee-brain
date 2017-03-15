@@ -1,4 +1,4 @@
-simtime=5.0
+simtime=10.0
 
 [env]
   binary=./main
