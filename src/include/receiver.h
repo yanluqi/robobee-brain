@@ -48,6 +48,7 @@ public:
 	double* GetValue(double tickt, double reward);
 	double GetAction(double tickt);
 	double GetDopa(double tickt);
+	double GetForce(int k);
 
 protected:
 
@@ -58,17 +59,13 @@ private:
 	std::vector < std::vector < std::vector<double> > > storage;
 
 	// Spikes Filtering
-	double *value,
-				 sumActor,
-				 policy,
-				 dopaActivity,
-				 *value_param, 	// [A_critic, b_critic, tau_r]
-			 	 *policy_param,	// [F_max, F_min]
-			 	 *dopa_param; 	// [A_dopa, b_dopa]
+	double *value, A_critic, b_critic, tau_r,
+				 policy, sumActor, F_max, F_min, minID, maxID, Q,
+				 dopaActivity, A_dopa, b_dopa;
 
-	int idCritic,
-			idActor,
-			idDopa;
+	int idCritic, sizeCritic,
+			idActor, sizeActor,
+			idDopa, sizeDopa;
 
 	Decoder *spikeFilter;
 };
