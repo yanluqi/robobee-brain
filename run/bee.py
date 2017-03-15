@@ -34,7 +34,7 @@ MONITOR = False
 # Active LOAD variable if you want to initialize the network with weights got in previous simulations
 LOAD = False
 # Simulation Time (if you modify this parameter remember to adjust it into the config file too)
-simt = 5000.0
+simt = 10000.0
 # Load network's parameters
 box = ParametersBox()
 # Create an instance of the class BeeBrain
@@ -98,9 +98,9 @@ matCritic_end = weightMatrix(connCritic)
 matActor_end = weightMatrix(connActor)
 
 # Plot & Save weights change
-plot3Dweights(matCritic_end - matCritic_start)
+plot3Dweights(matCritic_end - matCritic_start,'Critic Weights','Critic Neurons','Place Cells')
 plt.savefig('BeeBrain/wCriticChange.png', bbox_inches='tight')
-plot3Dweights(matActor_end - matActor_start)
+plot3Dweights(matActor_end - matActor_start,'Actor Weights','Actor Neurons','Place Cells')
 plt.savefig('BeeBrain/wActorChange.png', bbox_inches='tight')
 
 # Save weights and connections
