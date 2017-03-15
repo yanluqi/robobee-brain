@@ -238,7 +238,8 @@ int main(int argc, char **argv)
            omegaBound = 6*pi+pi/2,
            thetaBound = pi;
 
-    bool netControl = false;
+    bool netControl = true,
+         punish = false;
 
     arma::mat prevState(12,1, arma::fill::zeros),
               falseState(12,1, arma::fill::zeros);
@@ -246,6 +247,7 @@ int main(int argc, char **argv)
     // Simulation Loop
     while (tickt < simt) {
 
+        // Real Time Robot Motion with 100Hz framerate
         if (ANIMATE && std::abs(remainder(tickt,frameRate)) < 0.00001){
           Frame->Clear(0.0f, 0.1f, 0.15f, 1.0f);
 			    myShader->Bind();
@@ -258,20 +260,27 @@ int main(int argc, char **argv)
 			    Frame->Update();
         }
 
-        reward = 50*cos(state(0,int(tickt*dynFreq)));
+        // 1000Hz Classical Controller calculates 3 control torques
+        u = arma::join_vert(ctr.AltitudeControl(q), ctr.DampingControl(q));
 
+        // 100Hz Neural Controller
         if(dynTime >= TICK && std::abs(remainder(dynTime,TICK)) < 0.00001)
         {
+          if (punish){
+            reward = -50;
+            punish = false;
+          }
+          else
+            reward = 50*cos(q(0,0));
+
           prevStep = tickt/dynStep;
           prevState = state.col(prevStep);
-
-          // Classical Controller calculates 3 control torques
-          u = arma::join_vert(ctr.AltitudeControl(prevState), ctr.DampingControl(prevState));
 
           if (dynTime >= loadDopa)
             outhandler->SendState(prevState, tickt);
 
           // Dopaminergic Neurons Stimulation
+          tdError = 0;
           outhandler->SendReward(tdError, tickt);
 
           runtime->tick();  // Music Communication: spikes are sent and received here
@@ -282,9 +291,6 @@ int main(int argc, char **argv)
           value = inhandler->GetValue(tickt, reward); // Value Function and TD-error
           valueFunction = value[0];
           tdError = value[1];
-
-          if (netControl)
-            u(1,0) = policy;
 
           if (clockStop >= 0)
             tdError = 0;
@@ -300,22 +306,30 @@ int main(int argc, char **argv)
         environment(REWARD, iter) = reward;
         environment(TDERROR, iter) = tdError;
 
+        // Activate Neural Controller
+        if (netControl)
+          u(1,0) = policy;
+
         // Environment (RoboBee) generates the new state and reward
         q = bee.BeeDynamics(u);
 
+        // Check Boundaries
         robotPos = std::pow(q(6,0),2)/4 + std::pow(q(7,0),2)/4 + std::pow(q(8,0)-q_desired(8,0),2);
-
-        if (std::abs(q(0,0)) > thetaBound || std::abs(q(3,0)) > omegaBound || robotPos > cageBound)
+        if (std::abs(q(0,0)) > thetaBound || std::abs(q(3,0)) > omegaBound || robotPos > cageBound){
           clockStop = 0.1;
+          punish = true;
+        }
 
+        // Stop Simulation
         if (clockStop >= 0){
           q = q0;
           bee.SetState(q);
+          ctr.Reset();
           clockStop-=dynStep;
         }
 
+        // Increment Counters
         dynTime += dynStep;
-
         iter++;
     }
 
@@ -349,6 +363,7 @@ int main(int argc, char **argv)
 
     Plotter Plot(folder);
     Plot.InState();
+    Plot.Control();
     Plot.RobotPos();
     Plot.NetActivity();
     Plot.EnvActivity();
