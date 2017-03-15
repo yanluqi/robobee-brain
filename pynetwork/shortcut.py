@@ -37,7 +37,11 @@ connCritic = nest.GetConnections(nest.GetNodes(net.cortex)[0], nest.GetNodes(net
 connActor = nest.GetConnections(nest.GetNodes(net.cortex)[0], nest.GetNodes(net.actor)[0])
 
 plotNet(net)
-W = weightMatrix(connCritic)
-plot3Dweights(W)
-plot2Dweights(W)
+W1 = weightMatrix(connCritic)
+plot3Dweights(W1, 'Critic Weights','Critic Neurons','Place Cells')
+plot2Dweights(W1, 'Critic Weights','Critic Neurons','Place Cells')
+
+W2 = weightMatrix(connActor)
+plot3Dweights(W2, 'Actor Weights','Actor Neurons','Place Cells')
+plot2Dweights(W2, 'Actor Weights','Actor Neurons','Place Cells')
 # plt.show()

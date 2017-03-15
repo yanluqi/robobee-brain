@@ -67,11 +67,11 @@ def plotNet(net):
   plt.title('RoboBee Brain')
 
 def weightMatrix(conn):
-  min_first = min(conn)[0]
-  max_first = max(conn)[0]
+  min_first = min(nest.GetStatus(conn, 'source'))
+  max_first = max(nest.GetStatus(conn, 'source'))
 
-  min_second = min(conn)[1]
-  max_second = max(conn)[1]
+  min_second = min(nest.GetStatus(conn, 'target'))
+  max_second = max(nest.GetStatus(conn, 'target'))
 
 
   n_first = max_first - min_first + 1;
@@ -86,7 +86,7 @@ def weightMatrix(conn):
 
   return W
 
-def plot3Dweights(W):
+def plot3Dweights(W,title,xlabel,ylabel):
   fig = plt.figure()
   ax = fig.gca(projection='3d')
   X = np.arange(0, len(W), 1)
@@ -101,11 +101,19 @@ def plot3Dweights(W):
 
   fig.colorbar(surf, shrink=0.5, aspect=5)
 
+  plt.title(title)
+  plt.xlabel(xlabel)
+  plt.ylabel(ylabel)
+
   # plt.show()
 
-def plot2Dweights(W):
+def plot2Dweights(W,title,xlabel,ylabel):
   plt.figure()
   plt.pcolor(W,cmap=cm.jet, vmin=-50, vmax=100)
   plt.colorbar()
+
+  plt.title(title)
+  plt.xlabel(xlabel)
+  plt.ylabel(ylabel)
 
   # plt.show()
