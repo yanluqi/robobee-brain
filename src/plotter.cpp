@@ -9,6 +9,8 @@ Plotter::Plotter(const std::string& filePath)
 
   lengthSim = simtime.size();
   maxTime = arma::max(simtime.col(0));
+  limTime[0] = 0;
+  limTime[1] = maxTime;
 
   loader.load(folder + "state.dat");
   pos.zeros(lengthSim, 3);
@@ -22,10 +24,43 @@ Plotter::Plotter(const std::string& filePath)
     rot.col(i) = loader.row(i).t();
   }
 
+  limX[0] = arma::min(pos.col(0)) - arma::min(pos.col(0))*0.1;
+  limX[1] = arma::max(pos.col(0)) + arma::max(pos.col(0))*0.1;
+  limY[0] = arma::min(pos.col(1)) - arma::min(pos.col(1))*0.1;
+  limY[1] = arma::max(pos.col(1)) + arma::max(pos.col(1))*0.1;
+  limZ[0] = 0;
+  limZ[1] = arma::max(pos.col(2)) + arma::max(pos.col(2))*0.1;
+
   theta.col(0) = simtime;
   theta.col(1) = rot.col(0);
   omega.col(0) = simtime;
   omega.col(1) = loader.row(3).t();
+
+  limTheta[0] = arma::min(theta.col(1)) - arma::min(theta.col(1))*0.1;
+  limTheta[1] = arma::max(theta.col(1)) + arma::max(theta.col(1))*0.1;
+  limOmega[0] = arma::min(omega.col(1)) - arma::min(omega.col(1))*0.1;
+  limOmega[1] = arma::max(omega.col(1)) + arma::max(omega.col(1))*0.1;
+
+  loader.clear();
+
+  loader.load(folder + "control.dat");
+  lift.zeros(lengthSim, 2);
+  tau1.zeros(lengthSim, 2);
+  tau2.zeros(lengthSim, 2);
+
+  lift.col(0) = simtime;
+  lift.col(1) = loader.row(0).t();
+  tau1.col(0) = simtime;
+  tau1.col(1) = loader.row(1).t();
+  tau2.col(0) = simtime;
+  tau2.col(1) = loader.row(2).t();
+
+  limLift[0] = arma::min(lift.col(1)) - arma::min(lift.col(1))*0.1;
+  limLift[1] = arma::max(lift.col(1)) + arma::max(lift.col(1))*0.1;
+  limTau1[0] = arma::min(tau1.col(1)) - arma::min(tau1.col(1))*0.1;
+  limTau1[1] = arma::max(tau1.col(1)) + arma::max(tau1.col(1))*0.1;
+  limTau2[0] = arma::min(tau2.col(1)) - arma::min(tau2.col(1))*0.1;
+  limTau2[1] = arma::max(tau2.col(1)) + arma::max(tau2.col(1))*0.1;
 
   loader.clear();
 
@@ -42,6 +77,13 @@ Plotter::Plotter(const std::string& filePath)
   dopa.col(0) = simtime;
   dopa.col(1) = loader.row(2).t();
 
+  limValue[0] = arma::min(value.col(1)) - arma::min(value.col(1))*0.1;
+  limValue[1] = arma::max(value.col(1)) + arma::max(value.col(1))*0.1;
+  limPolicy[0] = arma::min(policy.col(1)) - arma::min(policy.col(1))*0.1;
+  limPolicy[1] = arma::max(policy.col(1)) + arma::max(policy.col(1))*0.1;
+  limDopa[0] = arma::min(dopa.col(1)) - arma::min(dopa.col(1))*0.1;
+  limDopa[1] = arma::max(dopa.col(1)) + arma::max(dopa.col(1))*0.1;
+
   loader.clear();
 
   loader.load(folder + "environment.dat");
@@ -52,6 +94,11 @@ Plotter::Plotter(const std::string& filePath)
   tdError.zeros(lengthSim, 2);
   tdError.col(0) = simtime;
   tdError.col(1) = loader.row(1).t();
+
+  limRew[0] = arma::min(reward.col(1)) - arma::min(reward.col(1))*0.1;
+  limRew[1] = arma::max(reward.col(1)) + arma::max(reward.col(1))*0.1;
+  limTDerr[0] = arma::min(tdError.col(1)) - arma::min(tdError.col(1))*0.1;
+  limTDerr[1] = arma::max(tdError.col(1)) + arma::max(tdError.col(1))*0.1;
 }
 
 Plotter::Plotter() {}
@@ -63,13 +110,6 @@ Plotter::~Plotter()
 
 void Plotter::InState()
 {
-  double limTheta[2],
-         limOmega[2];
-  limTheta[0] = arma::min(theta.col(1)) - arma::min(theta.col(1))/10;
-  limTheta[1] = arma::max(theta.col(1)) + arma::max(theta.col(1))/10;
-  limOmega[0] = arma::min(omega.col(1)) - arma::min(omega.col(1))/10;
-  limOmega[1] = arma::max(omega.col(1)) + arma::max(omega.col(1))/10;
-
   gp << "set terminal x11 0\n";
   gp << "set grid ytics lc rgb '#bbbbbb' lw 0.1 lt 0\n";
   gp << "set grid xtics lc rgb '#bbbbbb' lw 0.1 lt 0\n";
@@ -112,26 +152,72 @@ void Plotter::InState()
   gp << "reset\n";
 }
 
+void Plotter::Control()
+{
+  gp << "set terminal x11 5\n";
+  gp << "set grid ytics lc rgb '#bbbbbb' lw 0.1 lt 0\n";
+  gp << "set grid xtics lc rgb '#bbbbbb' lw 0.1 lt 0\n";
+  dummy = asprintf(&cmd, "set xrange [0:%f]\n", maxTime);
+  gp << cmd;
+  gp << "set multiplot layout 3,1 title 'Control Forces'\n";
+
+  gp << "unset xlabel\nset ylabel 'Lift Force []'\n";
+  dummy = asprintf(&cmd, "set yrange [%f:%f]\n", limLift[0], limLift[1]);
+  gp << cmd;
+  gp << "plot '-' with lines notitle\n";
+  gp.send1d(lift);
+
+  gp << "set xlabel 'time [s]'\nset ylabel 'Tau1 Torques []'\n";
+  dummy = asprintf(&cmd, "set yrange [%.15f:%.15f]\n", limTau1[0], limTau1[1]);
+  gp << cmd;
+  gp << "plot '-' with lines notitle\n";
+  gp.send1d(tau1);
+
+  gp << "set xlabel 'time [s]'\nset ylabel 'Tau2 Torques []'\n";
+  dummy = asprintf(&cmd, "set yrange [%.15f:%.15f]\n", limTau2[0], limTau2[1]);
+  gp << cmd;
+  gp << "plot '-' with lines notitle\n";
+  gp.send1d(tau2);
+
+  gp << "unset multiplot\n";
+
+  gp << "set terminal png\n";
+  dummy = asprintf(&cmd, "set output '%s/netActivity.png'\n", folder.c_str());
+  gp << cmd;
+  gp << "set multiplot layout 3,1 title 'Network Activity'\n";
+
+  gp << "unset xlabel\nset ylabel 'Lift Force []'\n";
+  dummy = asprintf(&cmd, "set yrange [%f:%f]\n", limLift[0], limLift[1]);
+  gp << cmd;
+  gp << "plot '-' with lines notitle\n";
+  gp.send1d(lift);
+
+  gp << "set xlabel 'time [s]'\nset ylabel 'Tau1 Torques []'\n";
+  dummy = asprintf(&cmd, "set yrange [%.15f:%.15f]\n", limTau1[0], limTau1[1]);
+  gp << cmd;
+  gp << "plot '-' with lines notitle\n";
+  gp.send1d(tau1);
+
+  gp << "set xlabel 'time [s]'\nset ylabel 'Tau2 Torques []'\n";
+  dummy = asprintf(&cmd, "set yrange [%.15f:%.15f]\n", limTau2[0], limTau2[1]);
+  gp << cmd;
+  gp << "plot '-' with lines notitle\n";
+  gp.send1d(tau2);
+
+  gp << "unset multiplot\n";
+  gp << "reset\n";
+}
+
 void Plotter::RobotPos()
 {
-  double limX[2],
-         limY[2],
-         limZ;
-  limX[0] = arma::min(pos.col(0)) - arma::min(pos.col(0))/10;
-  limX[1] = arma::max(pos.col(0)) + arma::max(pos.col(0))/10;
-  limY[0] = arma::min(pos.col(1)) - arma::min(pos.col(1))/10;
-  limY[1] = arma::max(pos.col(1)) + arma::max(pos.col(1))/10;
-  limZ = arma::max(pos.col(2)) + arma::max(pos.col(2))/10;
-
   arma::mat temp;
   arma::uvec id;
   id << 0 << 2;
 
-
   gp << "set terminal x11 1\n";
   gp << "set grid ytics lc rgb '#bbbbbb' lw 0.1 lt 0\n";
   gp << "set grid xtics lc rgb '#bbbbbb' lw 0.1 lt 0\n";
-  dummy = asprintf(&cmd, "set yrange [0:%f]\n", limZ);
+  dummy = asprintf(&cmd, "set yrange [%f:%f]\n", limZ[0], limZ[1]);
   gp << cmd;
   gp << "set multiplot layout 1,2 title 'Lateral Positions'\n";
 
@@ -152,6 +238,8 @@ void Plotter::RobotPos()
   temp.clear();
 
   gp << "unset multiplot\n";
+
+  gp << "set terminal png\n";
   dummy = asprintf(&cmd, "set output '%s/lateral_pos.png'\n", folder.c_str());
   gp << cmd;
   gp << "set multiplot layout 1,2 title 'Lateral Positions'\n";
@@ -178,16 +266,6 @@ void Plotter::RobotPos()
 
 void Plotter::NetActivity()
 {
-  double limValue[2],
-         limPolicy[2],
-         limDopa[2];
-  limValue[0] = arma::min(value.col(1)) - arma::min(value.col(1))/10;
-  limValue[1] = arma::max(value.col(1)) + arma::max(value.col(1))/10;
-  limPolicy[0] = arma::min(policy.col(1)) - arma::min(policy.col(1))/10;
-  limPolicy[1] = arma::max(policy.col(1)) + arma::max(policy.col(1))/10;
-  limDopa[0] = arma::min(dopa.col(1)) - arma::min(dopa.col(1))/10;
-  limDopa[1] = arma::max(dopa.col(1)) + arma::max(dopa.col(1))/10;
-
   gp << "set terminal x11 2\n";
   gp << "set grid ytics lc rgb '#bbbbbb' lw 0.1 lt 0\n";
   gp << "set grid xtics lc rgb '#bbbbbb' lw 0.1 lt 0\n";
@@ -202,7 +280,7 @@ void Plotter::NetActivity()
   gp.send1d(value);
 
   gp << "set xlabel 'time [s]'\nset ylabel 'Policy []'\n";
-  dummy = asprintf(&cmd, "set yrange [%.10f:%.10f]\n", limPolicy[0], limPolicy[1]);
+  dummy = asprintf(&cmd, "set yrange [%.15f:%.15f]\n", limPolicy[0], limPolicy[1]);
   gp << cmd;
   gp << "plot '-' with lines notitle\n";
   gp.send1d(policy);
@@ -227,7 +305,7 @@ void Plotter::NetActivity()
   gp.send1d(value);
 
   gp << "set xlabel 'time [s]'\nset ylabel 'Policy []'\n";
-  dummy = asprintf(&cmd, "set yrange [%.10f:%.10f]\n", limPolicy[0], limPolicy[1]);
+  dummy = asprintf(&cmd, "set yrange [%.15f:%.15f]\n", limPolicy[0], limPolicy[1]);
   gp << cmd;
   gp << "plot '-' with lines notitle\n";
   gp.send1d(policy);
@@ -244,13 +322,6 @@ void Plotter::NetActivity()
 
 void Plotter::EnvActivity()
 {
-  double limRew[2],
-         limTDerr[2];
-  limRew[0] = arma::min(reward.col(1)) - arma::min(reward.col(1))/10;
-  limRew[1] = arma::max(reward.col(1)) + arma::max(reward.col(1))/10;
-  limTDerr[0] = arma::min(tdError.col(1)) - arma::min(tdError.col(1))/10;
-  limTDerr[1] = arma::max(tdError.col(1)) + arma::max(tdError.col(1))/10;
-
   gp << "set terminal x11 3\n";
   gp << "set grid ytics lc rgb '#bbbbbb' lw 0.1 lt 0\n";
   gp << "set grid xtics lc rgb '#bbbbbb' lw 0.1 lt 0\n";
@@ -297,11 +368,7 @@ void Plotter::ValueMat(double thetaBound, double omegaBound)
 {
   double vRes = 0.1,
          vRows= 2*thetaBound/vRes + 1,
-         vCols= 2*omegaBound/vRes + 1,
-         limValue[2];
-
-  limValue[0] = arma::min(value.col(1)) - arma::min(value.col(1))/10;
-  limValue[1] = arma::max(value.col(1)) + arma::max(value.col(1))/10;
+         vCols= 2*omegaBound/vRes + 1;
 
   valueMat.zeros(vRows+1,vCols+1);
 
@@ -349,4 +416,69 @@ void Plotter::ValueMat(double thetaBound, double omegaBound)
   gp << "reset\n";
 
   valueMat.save(folder + "valueMatrix.dat",arma::raw_ascii);
+}
+
+void Plotter::Draw(arma::mat& data,
+                   int term,
+                   int width, int length,
+                   int xpos, int ypos,
+                   double *xlim, double *ylim,
+                   const std::string& title,
+                   const std::string& xlabel,
+                   const std::string& ylabel)
+{
+  dummy = asprintf(&cmd, "set terminal x11 %d size %d,%d position %d,%d\n", term, width, length, xpos, ypos);
+  gp << cmd;
+  dummy = asprintf(&cmd, "set title '%s'\n", title.c_str());
+  gp << cmd;
+  dummy = asprintf(&cmd, "set xlabel '%s'\n", xlabel.c_str());
+  gp << cmd;
+  dummy = asprintf(&cmd, "set ylabel '%s'\n", ylabel.c_str());
+  gp << cmd;
+  gp << "set grid ytics lc rgb '#bbbbbb' lw 0.1 lt 0\n";
+  gp << "set grid xtics lc rgb '#bbbbbb' lw 0.1 lt 0\n";
+  dummy = asprintf(&cmd, "set xrange [%.15f:%.15f]\n", xlim[0], xlim[1]);
+  gp << cmd;
+  dummy = asprintf(&cmd, "set yrange [%.15f:%.15f]\n", ylim[0], ylim[1]);
+  gp << cmd;
+  gp << "plot" << gp.file1d(data) << "with lines notitle\n";
+  gp << "reset\n";
+}
+
+void Plotter::Simulation() {
+  Display* Frame = new Display("Hello World!", 800, 600);
+  Camera *Cam = new Camera(glm::vec3(-0.3,0.2,0.2), glm::vec3(0,0,0), glm::vec3(0,1,0));
+  Light *Lamp = new Light(glm::vec3(2,1,5));
+  Shader *myShader = new Shader("../graphic/vertex.glsl", "../graphic/fragment.glsl");
+  Model *Base = new Model("../graphic/","base");
+  Model *Robot = new Model("../graphic/","robobee");
+
+  for (int i = 0; i < lengthSim; i+=10) {
+    Frame->Clear(0.0f, 0.1f, 0.15f, 1.0f);
+    myShader->Bind();
+    Robot->SetPos( glm::vec3( pos(i,1), pos(i,2), pos(i,0) ) );
+    Robot->SetRot( glm::vec3( rot(i,1), rot(i,2), rot(i,0) ) );
+    myShader->Update(*Robot, *Cam, *Lamp);
+    Robot->Draw();
+    myShader->Update(*Base, *Cam, *Lamp);
+    Base->Draw();
+    Frame->Update();
+
+    toPlot = theta.rows(0,i);
+    Draw(toPlot, 1, 300, 200, 0, 0, limTime, limTheta, "Angular Position", "time [s]", "theta [rad]");
+    toPlot = omega.rows(0,i);
+    Draw(toPlot, 2, 300, 200, 310, 0, limTime, limOmega, "Angular Velocity", "time [s]", "omega [rad/s]");
+
+    toPlot = value.rows(0,i);
+    Draw(toPlot, 3, 300, 200, 0, 250, limTime, limValue, "Value Function", "time [s]", "Value [units]");
+    toPlot = policy.rows(0,i);
+    Draw(toPlot, 4, 300, 200, 310, 250, limTime, limPolicy, "Policy", "time [s]", "Policy [Nm]");
+
+    toPlot = tdError.rows(0,i);
+    Draw(toPlot, 5, 300, 200, 0, 500, limTime, limTDerr, "TD-error", "time [s]", "TD-error [units/s]");
+    toPlot = dopa.rows(0,i);
+    Draw(toPlot, 6, 300, 200, 310, 500, limTime, limDopa, "Dopa Activity", "time [s]", "Dopa [Hz]");
+    toPlot = reward.rows(0,i);
+    Draw(toPlot, 7, 300, 200, 620, 500, limTime, limRew, "Reward", "time [s]", "Reward [units]");
+  }
 }
