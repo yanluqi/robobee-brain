@@ -41,6 +41,8 @@ public:
 	// Damping Controller (Attitude)
 	arma::mat DampingControl(arma::mat& q);
 
+	inline void Reset() { init = 0; };
+
 protected:
 
 private:
