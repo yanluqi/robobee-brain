@@ -52,6 +52,7 @@ m4/libtool.m4
 # Compilation Outputs
 build/
 run/main
+run/analyze
 
 # Network Class Folders
 pynetwork/BeeBrain
