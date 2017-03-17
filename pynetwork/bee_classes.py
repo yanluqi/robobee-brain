@@ -295,20 +295,21 @@ class BeeBrain(object):
     """
     Plastic connetion between place cells and critic population
     """
-    self.cdict_plastic_critic = {'connection_type'       : 'divergent',
-                                 'synapse_model'         : 'plastic',
-                                #'number_of_connections' :  50,
-                                #  'weights'               : 100.0,
-                                  'weights'               :  {'uniform': {'min': 0.0, 'max': 100.0}},
-                                # 'weights': {'gaussian': {'p_center': 90., 'sigma': 5.}}
-                                }
-
-    tp.ConnectLayers(self.cortex, self.critic, self.cdict_plastic_critic)
-
     if args:
-      conn = nest.GetConnections(target = nest.GetNodes(self.critic)[0])
-      dictW = self.createDict(args[0])
-      nest.SetStatus(conn, dictW)
+        connToCritic = args[0]
+        for i in range(len(connToCritic)):
+            nest.Connect([int(connToCritic[i,0])], [int(connToCritic[i,1])], 'one_to_one', {'model': 'plastic', 'weight': connToCritic[i,3]})
+    else:
+        self.cdict_plastic_critic = {'connection_type'       : 'divergent',
+                                     'synapse_model'         : 'plastic',
+                                    #'number_of_connections' :  50,
+                                    #  'weights'               : 100.0,
+                                      'weights'               :  {'uniform': {'min': 0.0, 'max': 100.0}},
+                                    # 'weights': {'gaussian': {'p_center': 90., 'sigma': 5.}}
+                                    }
+        tp.ConnectLayers(self.cortex, self.critic, self.cdict_plastic_critic)
+
+
 
 #======================#
 # PLACE CELLS -> ACTOR #
@@ -316,19 +317,17 @@ class BeeBrain(object):
     """
     Plastic connetion between place cells and actor population
     """
-    self.cdict_plastic_actor = {'connection_type'       : 'divergent',
-                                'synapse_model'         : 'plastic',
-                              # 'number_of_connections' :  50,
-                                'weights'               :  {'uniform': {'min': 0.0, 'max': 100.0}},
-                               }
-
-    tp.ConnectLayers(self.cortex, self.actor, self.cdict_plastic_actor)
-
     if args:
-      conn = nest.GetConnections(target = nest.GetNodes(self.actor)[0])
-      dictW = self.createDict(args[1])
-      nest.SetStatus(conn, dictW)
-
+        connToActor = args[1]
+        for i in range(len(connToActor)):
+            nest.Connect([int(connToActor[i,0])], [int(connToActor[i,1])], 'one_to_one', {'model': 'plastic', 'weight': connToActor[i,3]})
+    else:
+        self.cdict_plastic_actor = {'connection_type'       : 'divergent',
+                                    'synapse_model'         : 'plastic',
+                                  # 'number_of_connections' :  50,
+                                    'weights'               :  {'uniform': {'min': 0.0, 'max': 100.0}},
+                                   }
+        tp.ConnectLayers(self.cortex, self.actor, self.cdict_plastic_actor)
 #============================#
 # ACTOR LATERAL CONNECTIVITY #
 #============================#
