@@ -22,6 +22,7 @@
 #ifndef IOMANAGER_H
 #define IOMANAGER_H
 
+#include <iostream>
 #include <string>
 #include <vector>
 #include <fstream>
@@ -30,7 +31,7 @@ class Iomanager
 {
 public:
 	// Constructor
-	Iomanager(std::string& _loadDir, std::string& _saveDir);
+	Iomanager(const std::string& _loadDir, const std::string& _saveDir);
 
 	// Default Constructor
 	Iomanager();
@@ -38,16 +39,25 @@ public:
 	// Destroyer
 	~Iomanager();
 
+	void SetStream(const std::string& fname, const std::string& stype);
+
+	std::ifstream& Read();
+	std::ofstream& Print();
+
 	// Save Data in a file
-	void PrintData(std::string fname, std::vector <double> *vect);
+	void SaveVec(const std::string& fname, std::vector<double> *vect);
 
 	// Load Data from a file
-	std::vector <double> ReadData(std::string fname);
-	// std::vector<std::vector<double> > ReadData(std::string fname);
+	std::vector<double>* LoadVec(const std::string& fname);
+
+protected:
 
 private:
 	std::string loadDir;
 	std::string saveDir;
+
+	std::ofstream outStream;
+	std::ifstream inStream;
 };
 
 #endif

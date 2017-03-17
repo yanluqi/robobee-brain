@@ -19,29 +19,59 @@
  *
  */
 
-
 #include "include/iomanager.h"
 
-Iomanager::Iomanager(std::string& _loadDir, std::string& _saveDir){
-  loadDir = _loadDir + "/";
-  saveDir = _saveDir + "/";
+Iomanager::Iomanager(const std::string& _loadDir, const std::string& _saveDir){
+  loadDir = _loadDir;
+  saveDir = _saveDir;
 }
 
 Iomanager::Iomanager() {}
 
-Iomanager::~Iomanager() {}
+Iomanager::~Iomanager()
+{
+  if (inStream.is_open())
+    inStream.close();
+  else if (outStream.is_open())
+    outStream.close();
+}
 
-void Iomanager::PrintData(std::string fname, std::vector <double> *vect){
-    std::string path = saveDir + fname;
-    std::ofstream outData (path.c_str(), std::ofstream::out);
+void Iomanager::SetStream(const std::string& fname, const std::string& stype)
+{
+  if (stype == "in")
+    inStream.open(loadDir+fname);
+  else if (stype == "out")
+    outStream.open(saveDir+fname, std::ofstream::out);
+}
 
-    for (int i=0; i != vect->size(); ++i)
-        outData << vect->at(i) << std::endl;
+std::ofstream& Iomanager::Print()
+{
+  if (!outStream.is_open())
+    std::cerr << "/* No Output Stream Set */" << '\n';
 
-    outData.close();
-}// end printData 1D
+  return outStream;
+}
 
-std::vector <double> Iomanager::ReadData(std::string fname)
+std::ifstream& Iomanager::Read()
+{
+  if (!inStream.is_open())
+    std::cerr << "/* No Input Stream Set */" << '\n';
+
+  return inStream;
+}
+
+void Iomanager::SaveVec(const std::string& fname, std::vector<double> *vect)
+{
+  std::string path = saveDir + fname;
+  std::ofstream outData (path.c_str(), std::ofstream::out);
+
+  for (int i=0; i != vect->size(); ++i)
+      outData << vect->at(i) << std::endl;
+
+  outData.close();
+}
+
+std::vector<double>* Iomanager::LoadVec(const std::string& fname)
 {
   std::string path = loadDir + fname;
   std::ifstream inData (path.c_str());
@@ -56,38 +86,5 @@ std::vector <double> Iomanager::ReadData(std::string fname)
   inData.close();
   output.pop_back();
 
-  return output;
-} // end ReadData 2D
-
-// std::vector<std::vector<double> > Iomanager::ReadData(std::string fname) {
-//   using namespace std;
-//
-//   string path = loadDir + fname;
-//   ifstream file;
-//   file.open(path.c_str(), ios::in | ios::out);
-//
-//   if(!file.is_open())
-//       std::cerr << "Error: Can't open file." << std::endl;
-//
-//   vector<vector<double> > data;
-//   string line;
-//
-//   while(!std::getline(file, line, '\n').eof()) {
-//       istringstream reader(line);
-//       vector<double> lineData;
-//
-//       while(!reader.eof()) {
-//           double val;
-//           reader >> val;
-//
-//           if(reader.fail())
-//               break;
-//
-//           lineData.push_back(val);
-//       }
-//
-//       data.push_back(lineData);
-//       file.close();
-//       return data;
-//   }
-// } // end ReadData 2D
+  return &output;
+}
