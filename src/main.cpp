@@ -153,7 +153,7 @@ int main(int argc, char **argv)
     bool types[] = {true, false};    // true->angle false->anyother
 
     Sender *outhandler = new Sender(outdata, TICK);
-    outhandler->CreatePlaceCells (2, idState, resState, types, ranges, 700);
+    outhandler->CreatePlaceCells(2, idState, resState, types, ranges, 700);
 
     // Mapping Input/Output Port
     outdata->map(&outindex, MUSIC::Index::GLOBAL);
@@ -162,7 +162,7 @@ int main(int argc, char **argv)
 /*==================
 |   OPENGL         |
 ==================*/
-    bool ANIMATE = false;
+    bool ANIMATE = false, REC = false;
     int length = 800, height = 600;
 	  double frameRate = 0.01;
 
@@ -186,19 +186,18 @@ int main(int argc, char **argv)
 |   RECORDING      |
 ==================*/
     // Create Saving Folder
-    time_t timer = time(NULL);
-
-    struct tm *tm_struct = localtime(&timer);
+    time_t timer;
+   	time (&timer);
+    struct tm *timeInfo = localtime(&timer);
 
     char *fname;
-    int dummy = asprintf(&fname, "Simulations/simtime_%d-%d-%d/", tm_struct->tm_hour, tm_struct->tm_min, tm_struct->tm_sec);
+    int dummy = asprintf(&fname, "Simulations/simtime_%d-%d-%d/", timeInfo->tm_hour, timeInfo->tm_min, timeInfo->tm_sec);
 
-    boost::filesystem::path dir(fname);
-    if(boost::filesystem::create_directory(dir)) {
+    std::string folder(fname), netFolder(folder + "network/");
+    boost::filesystem::path dir(folder), dirNet(netFolder);
+    if(boost::filesystem::create_directory(dir) && boost::filesystem::create_directory(dirNet)) {
         std::cout << "Success" << "\n";
     }
-
-    std::string folder(fname);
 
     double lenghtVecs = dynFreq*simt + 1;
 
@@ -214,7 +213,12 @@ int main(int argc, char **argv)
               control(u.size(),lenghtVecs);
 
     // OpenGL frames
-    // Frame->SetRecorder(folder + "flight.mp4");
+    if (REC)
+      Frame->SetRecorder(folder + "flight.mp4");
+
+    Iomanager manager("BeeBrain/", folder);
+    manager.SetStream("trials.dat", "out");
+    manager.Print() << "Column 1 -> Trial Number\nColumn 2 -> Trial Duration\n" << std::endl;
 
 /*========================================================================================================================*/
 
@@ -226,7 +230,8 @@ int main(int argc, char **argv)
 
     // Initialize
     int iter = 0,
-        prevStep = 0;
+        prevStep = 0,
+        trials = 0;
 
     double tickt = runtime->time(),
            loadDopa = 1.0,
@@ -236,7 +241,8 @@ int main(int argc, char **argv)
            robotPos = 0,
            cageBound = std::pow(q_desired(8,0),2),
            omegaBound = 6*pi+pi/2,
-           thetaBound = pi;
+           thetaBound = pi,
+           trialTime = 0;
 
     bool netControl = true,
          punish = false;
@@ -245,6 +251,7 @@ int main(int argc, char **argv)
               falseState(12,1, arma::fill::zeros);
 
     // Simulation Loop
+    manager.Print() << "Simulation start time " << timeInfo->tm_hour << ":" << timeInfo->tm_min << ":" << timeInfo->tm_sec << std::endl;
     while (tickt < simt) {
 
         // Real Time Robot Motion with 100Hz framerate
@@ -316,8 +323,12 @@ int main(int argc, char **argv)
         // Check Boundaries
         robotPos = std::pow(q(6,0),2)/4 + std::pow(q(7,0),2)/4 + std::pow(q(8,0)-q_desired(8,0),2);
         if (std::abs(q(0,0)) > thetaBound || std::abs(q(3,0)) > omegaBound || robotPos > cageBound){
-          clockStop = 0.1;
+          clockStop = 0.2;
           punish = true;
+          trialTime = dynTime - startSim;
+          manager.Print() << trials << "   " << trialTime << std::endl;
+          startSim = dynTime + clockStop;
+          trials++;
         }
 
         // Stop Simulation
@@ -335,6 +346,10 @@ int main(int argc, char **argv)
 
     // End runtime phase
     runtime->finalize();
+
+    time (&timer);
+    timeInfo = localtime(&timer);
+    manager.Print() << "Simulation end time " << timeInfo->tm_hour << ":" << timeInfo->tm_min << ":" << timeInfo->tm_sec << std::endl;
 /*========================================================================================================================*/
 
 
@@ -349,17 +364,21 @@ int main(int argc, char **argv)
     environment.save(folder + "environment.dat",arma::raw_ascii);
 
     arma::mat netParams;
-    netParams.load("BeeBrain/matCritic_start.dat");
-    netParams.save(folder + "matCritic_start.dat",arma::raw_ascii);
+    netParams.load("BeeBrain/pCellsIDs.dat");
+    netParams.save(netFolder + "pCellsIDs.dat",arma::raw_ascii);
     netParams.clear();
-    netParams.load("BeeBrain/matActor_start.dat");
-    netParams.save(folder + "matActor_start.dat",arma::raw_ascii);
+    netParams.load("BeeBrain/criticIDs.dat");
+    netParams.save(netFolder + "criticIDs.dat",arma::raw_ascii);
     netParams.clear();
-    netParams.load("BeeBrain/matCritic_end.dat");
-    netParams.save(folder + "matCritic_end.dat",arma::raw_ascii);
+    netParams.load("BeeBrain/actorIDs.dat");
+    netParams.save(netFolder + "actorIDs.dat",arma::raw_ascii);
     netParams.clear();
-    netParams.load("BeeBrain/matActor_end.dat");
-    netParams.save(folder + "matActor_end.dat",arma::raw_ascii);
+    netParams.load("BeeBrain/connToCritic.dat");
+    netParams.save(netFolder + "connToCritic.dat",arma::raw_ascii);
+    netParams.clear();
+    netParams.load("BeeBrain/connToActor.dat");
+    netParams.save(netFolder + "connToActor.dat",arma::raw_ascii);
+    netParams.clear();
 
     Plotter Plot(folder);
     Plot.InState();
@@ -379,7 +398,6 @@ int main(int argc, char **argv)
     delete inhandler;
     delete outhandler;
 
-
     // OpenGL
     if (ANIMATE){
       delete Frame;
@@ -392,9 +410,3 @@ int main(int argc, char **argv)
 
 /*========================================================================================================================*/
 }
-// std::string loadfolder("BeeBrain");
-// Iomanager manager(loadfolder, folder);
-// std::vector <double> criticWeights = manager.ReadData("weightsCritic.out"),
-//                      actorWeights = manager.ReadData("weightsActor.out");
-// manager.PrintData("weightsCritic.dat", &criticWeights);
-// manager.PrintData("weightsActor.dat", &actorWeights);
