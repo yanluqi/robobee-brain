@@ -122,12 +122,14 @@ void Plotter::InState()
   gp << cmd;
   gp << "plot '-' with lines notitle\n";
   gp.send1d(theta);
+  gp.flush();
 
   gp << "set xlabel 'time [s]'\nset ylabel 'omega 1 [rad/s]'\n";
   dummy = asprintf(&cmd, "set yrange [%f:%f]\n", limOmega[0], limOmega[1]);
   gp << cmd;
   gp << "plot '-' with lines notitle\n";
   gp.send1d(omega);
+  gp.flush();
 
   gp << "unset multiplot\n";
 
@@ -141,12 +143,14 @@ void Plotter::InState()
   gp << cmd;
   gp << "plot '-' with lines notitle\n";
   gp.send1d(theta);
+  gp.flush();
 
   gp << "set xlabel 'time [s]'\nset ylabel 'omega 1 [rad/s]'\n";
   dummy = asprintf(&cmd, "set yrange [%f:%f]\n", limOmega[0], limOmega[1]);
   gp << cmd;
   gp << "plot '-' with lines notitle\n";
   gp.send1d(omega);
+  gp.flush();
 
   gp << "unset multiplot\n";
   gp << "reset\n";
@@ -166,18 +170,21 @@ void Plotter::Control()
   gp << cmd;
   gp << "plot '-' with lines notitle\n";
   gp.send1d(lift);
+  gp.flush();
 
   gp << "set xlabel 'time [s]'\nset ylabel 'Tau1 Torques []'\n";
   dummy = asprintf(&cmd, "set yrange [%.15f:%.15f]\n", limTau1[0], limTau1[1]);
   gp << cmd;
   gp << "plot '-' with lines notitle\n";
   gp.send1d(tau1);
+  gp.flush();
 
   gp << "set xlabel 'time [s]'\nset ylabel 'Tau2 Torques []'\n";
   dummy = asprintf(&cmd, "set yrange [%.15f:%.15f]\n", limTau2[0], limTau2[1]);
   gp << cmd;
   gp << "plot '-' with lines notitle\n";
   gp.send1d(tau2);
+  gp.flush();
 
   gp << "unset multiplot\n";
 
@@ -191,18 +198,21 @@ void Plotter::Control()
   gp << cmd;
   gp << "plot '-' with lines notitle\n";
   gp.send1d(lift);
+  gp.flush();
 
   gp << "set xlabel 'time [s]'\nset ylabel 'Tau1 Torques []'\n";
   dummy = asprintf(&cmd, "set yrange [%.15f:%.15f]\n", limTau1[0], limTau1[1]);
   gp << cmd;
   gp << "plot '-' with lines notitle\n";
   gp.send1d(tau1);
+  gp.flush();
 
   gp << "set xlabel 'time [s]'\nset ylabel 'Tau2 Torques []'\n";
   dummy = asprintf(&cmd, "set yrange [%.15f:%.15f]\n", limTau2[0], limTau2[1]);
   gp << cmd;
   gp << "plot '-' with lines notitle\n";
   gp.send1d(tau2);
+  gp.flush();
 
   gp << "unset multiplot\n";
   gp << "reset\n";
@@ -227,6 +237,7 @@ void Plotter::RobotPos()
   gp << "plot '-' with lines notitle\n";
   temp = pos.cols(id);
   gp.send1d(temp);
+  gp.flush();
   temp.clear();
 
   gp << "set xlabel 'y position (m)'\nunset ylabel\n";
@@ -235,6 +246,7 @@ void Plotter::RobotPos()
   gp << "plot '-' with lines notitle\n";
   temp = pos.cols(1,2);
   gp.send1d(temp);
+  gp.flush();
   temp.clear();
 
   gp << "unset multiplot\n";
@@ -250,6 +262,7 @@ void Plotter::RobotPos()
   gp << "plot '-' with lines notitle\n";
   temp = pos.cols(id);
   gp.send1d(temp);
+  gp.flush();
   temp.clear();
 
   gp << "set xlabel 'y position (m)'\nunset ylabel\n";
@@ -258,6 +271,7 @@ void Plotter::RobotPos()
   gp << "plot '-' with lines notitle\n";
   temp = pos.cols(1,2);
   gp.send1d(temp);
+  gp.flush();
   temp.clear();
 
   gp << "unset multiplot\n";
@@ -278,18 +292,21 @@ void Plotter::NetActivity()
   gp << cmd;
   gp << "plot '-' with lines notitle\n";
   gp.send1d(value);
+  gp.flush();
 
   gp << "set xlabel 'time [s]'\nset ylabel 'Policy []'\n";
   dummy = asprintf(&cmd, "set yrange [%.15f:%.15f]\n", limPolicy[0], limPolicy[1]);
   gp << cmd;
   gp << "plot '-' with lines notitle\n";
   gp.send1d(policy);
+  gp.flush();
 
   gp << "set xlabel 'time [s]'\nset ylabel 'Dopa Activity []'\n";
   dummy = asprintf(&cmd, "set yrange [%f:%f]\n", limDopa[0], limDopa[1]);
   gp << cmd;
   gp << "plot '-' with lines notitle\n";
   gp.send1d(dopa);
+  gp.flush();
 
   gp << "unset multiplot\n";
 
@@ -303,18 +320,21 @@ void Plotter::NetActivity()
   gp << cmd;
   gp << "plot '-' with lines notitle\n";
   gp.send1d(value);
+  gp.flush();
 
   gp << "set xlabel 'time [s]'\nset ylabel 'Policy []'\n";
   dummy = asprintf(&cmd, "set yrange [%.15f:%.15f]\n", limPolicy[0], limPolicy[1]);
   gp << cmd;
   gp << "plot '-' with lines notitle\n";
   gp.send1d(policy);
+  gp.flush();
 
   gp << "set xlabel 'time [s]'\nset ylabel 'Dopa Activity []'\n";
   dummy = asprintf(&cmd, "set yrange [%f:%f]\n", limDopa[0], limDopa[1]);
   gp << cmd;
   gp << "plot '-' with lines notitle\n";
   gp.send1d(dopa);
+  gp.flush();
 
   gp << "unset multiplot\n";
   gp << "reset\n";
@@ -334,12 +354,14 @@ void Plotter::EnvActivity()
   gp << cmd;
   gp << "plot '-' with lines notitle\n";
   gp.send1d(reward);
+  gp.flush();
 
   gp << "set xlabel 'time [s]'\nset ylabel 'TD-error [units/s]'\n";
   dummy = asprintf(&cmd, "set yrange [%f:%f]\n", limTDerr[0], limTDerr[1]);
   gp << cmd;
   gp << "plot '-' with lines notitle\n";
   gp.send1d(tdError);
+  gp.flush();
 
   gp << "unset multiplot\n";
 
@@ -353,12 +375,14 @@ void Plotter::EnvActivity()
   gp << cmd;
   gp << "plot '-' with lines notitle\n";
   gp.send1d(reward);
+  gp.flush();
 
   gp << "set xlabel 'time [s]'\nset ylabel 'TD-error [units/s]'\n";
   dummy = asprintf(&cmd, "set yrange [%f:%f]\n", limTDerr[0], limTDerr[1]);
   gp << cmd;
   gp << "plot '-' with lines notitle\n";
   gp.send1d(tdError);
+  gp.flush();
 
   gp << "unset multiplot\n";
   gp << "reset\n";
@@ -413,6 +437,7 @@ void Plotter::ValueMat(double thetaBound, double omegaBound)
   dummy = asprintf(&cmd, "set output '%s/valueMatrix.png'\n", folder.c_str());
   gp << cmd;
   gp << "splot " << gp.file1d(valueMat) << "matrix nonuniform with lines notitle\n";
+  gp.flush();
   gp << "reset\n";
 
   valueMat.save(folder + "valueMatrix.dat",arma::raw_ascii);
@@ -442,6 +467,7 @@ void Plotter::Draw(arma::mat& data,
   dummy = asprintf(&cmd, "set yrange [%.15f:%.15f]\n", ylim[0], ylim[1]);
   gp << cmd;
   gp << "plot" << gp.file1d(data) << "with lines notitle\n";
+  gp.flush();
   gp << "reset\n";
 }
 
