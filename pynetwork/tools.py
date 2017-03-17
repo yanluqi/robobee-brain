@@ -66,23 +66,20 @@ def plotNet(net):
   plt.ylabel('Workspace Rows: 30')
   plt.title('RoboBee Brain')
 
-def weightMatrix(conn):
-  min_first = min(nest.GetStatus(conn, 'source'))
-  max_first = max(nest.GetStatus(conn, 'source'))
+def weightMatrix(sources, targets, weights):
+  minSourceID = int(min(sources))
+  maxSourceID = int(max(sources))
 
-  min_second = min(nest.GetStatus(conn, 'target'))
-  max_second = max(nest.GetStatus(conn, 'target'))
+  minTargetID = int(min(targets))
+  maxTargetID = int(max(targets))
 
+  numSources = maxSourceID - minSourceID + 1;
+  numTargets= maxTargetID - minTargetID + 1;
 
-  n_first = max_first - min_first + 1;
-  n_second = max_second - min_second + 1;
+  W = np.zeros([numSources, numTargets])
 
-  W = np.zeros([n_first, n_second])
-
-  w_conn = nest.GetStatus(conn, keys='weight')
-
-  for idx,n in enumerate(conn):
-    W[n[0]-min_first, n[1]-min_second] += w_conn[idx]
+  for idx,n in enumerate(np.column_stack((sources,targets))):
+    W[int(n[0])-minSourceID, int(n[1])-minTargetID] += weights[idx]
 
   return W
 
