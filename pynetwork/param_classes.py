@@ -401,7 +401,7 @@ class ParametersBox(object):
 		self.params['plastic']['w_max'] = 100.
 		self.params['plastic']['w_min'] = -50.
 		self.params['plastic']['baseline'] = 31.71 # 31.734262849737714
-		self.params['plastic']['tau_elegibility'] = 80.
+		self.params['plastic']['tau_elegibility'] = 100. # 80.
 		self.params['plastic']['tau_dopa'] = 100.
 		self.params['plastic']['tau_plus'] = 10.
 		self.params['plastic']['delay'] = 0.1
