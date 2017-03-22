@@ -11,7 +11,7 @@
 class Plotter
 {
 public:
-  Plotter(const std::string& filePath);
+  Plotter(const std::string& filePath, bool LOAD);
   Plotter();
   virtual ~Plotter();
 
@@ -20,7 +20,8 @@ public:
   void RobotPos();
   void NetActivity();
   void EnvActivity();
-  void ValueMat(double thetaBound, double omegaBound);
+  void ValueMat();
+  void Weights();
   void Draw(arma::mat& data,
             int term,
             int width, int length,
@@ -29,9 +30,11 @@ public:
             const std::string& title,
             const std::string& xlabel,
             const std::string& ylabel);
-  void Simulation();
+  void Simulation(double start, double end);
 
 protected:
+  void BuilValueMat();
+  void XYZSurfReshape(arma::mat& A);
 
 private:
   Gnuplot gp;
@@ -45,11 +48,12 @@ private:
             lift, tau1, tau2,
             reward, tdError,
             value, policy, dopa,
-            valueMat;
+            connToCritic, connToActor,
+            valueMat, valueReshaped;
 
   int lengthSim, dummy;
 
-  double maxTime, limTime[2],
+  double maxTime, limTime[2], freq,
          limTheta[2], limOmega[2],
          limLift[2], limTau1[2], limTau2[2],
          limX[2], limY[2], limZ[2],
