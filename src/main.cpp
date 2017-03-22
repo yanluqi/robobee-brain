@@ -53,27 +53,23 @@ int main(int argc, char **argv)
 ==================*/
 
     const double pi = 3.1415926535897;
-    double dynFreq = 1000,
-           dynStep = 1/dynFreq,
-           reward = 0;
-
-
-    arma::mat q,
-              u(4,1, arma::fill::zeros),
-              q_desired;
+    arma::mat q, q0, q_desired,
+              u(4,1, arma::fill::zeros);
 
     // Define Initial & Desired State
-    q  << 0.2 << arma::endr << -0.2 << arma::endr << 0 << arma::endr        // Angular Position (Body Attached)
-       << 0 << arma::endr << 0 << arma::endr << 1 << arma::endr             // Angular Velocity (Body Attached)
+    q0 << 0.20 << arma::endr << -0.2 << arma::endr << 0.00 << arma::endr        // Angular Position (Body Attached)
+       << 0.00 << arma::endr << 0.00 << arma::endr << 1.00 << arma::endr             // Angular Velocity (Body Attached)
        << 0.04 << arma::endr << 0.04 << arma::endr << 0.01 << arma::endr    // Linear Postion (Inertial Frame)
-       << 0.1 << arma::endr << -0.3 << arma::endr << 0;                     // Linear Velocity (Body Attached)
+       << 0.10 << arma::endr << -0.3 << arma::endr << 0.00;                     // Linear Velocity (Body Attached)
 
-    q_desired << 0 << arma::endr << 0 << arma::endr << 0 << arma::endr      // Angular Position (Body Attached)
-              << 0 << arma::endr << 0 << arma::endr << 0 << arma::endr      // Angular Velocity (Body Attached)
-              << 0 << arma::endr << 0 << arma::endr << 0.08 << arma::endr   // Linear Postion (Inertial Frame)
-              << 0 << arma::endr << 0 << arma::endr << 0;                   // Linear Velocity (Body Attached)
+    q_desired << 0 << arma::endr << 0 << arma::endr << 0 << arma::endr
+              << 0 << arma::endr << 0 << arma::endr << 0 << arma::endr
+              << 0 << arma::endr << 0 << arma::endr << 0.08 << arma::endr
+              << 0 << arma::endr << 0 << arma::endr << 0;
 
-    arma::mat q0 = q;
+    q = q0;
+    double dynFreq = 1000, dynStep = 1/dynFreq,
+           reward = 50*cos(q(0,0));
 
     // Objects Creation
     Robobee bee(q, dynFreq);     // ROBOBEE
@@ -233,22 +229,23 @@ int main(int argc, char **argv)
         prevStep = 0,
         trials = 0;
 
-    double tickt = runtime->time(),
-           loadDopa = 1.0,
-           startSim = 2.0,
-           clockStop = startSim,
-           dynTime = 0,
+    double tickt = runtime->time(), // Neuro-Controller/MUSIC TICK time
+           dynTime = 0,             // Simulation time
+           loadDopa = 1.0,          // Dopaminergic neurons loading time
+           startSim = 2.0,          // Simulation start time
+           punishTime = -1.0,        // Time of punish deliverying
+           clockStop = 0.5,         // Resting time between trials
+           trialTime = 0,           // Record duration of each trial
+           prevRew = 0,
            robotPos = 0,
            cageBound = std::pow(q_desired(8,0),2),
            omegaBound = 6*pi+pi/2,
-           thetaBound = pi,
-           trialTime = 0;
+           thetaBound = pi;
 
-    bool netControl = true,
-         punish = false;
+    bool netControl = true;
 
     arma::mat prevState(12,1, arma::fill::zeros),
-              falseState(12,1, arma::fill::zeros);
+              crashState(12,1, arma::fill::zeros);
 
     // Simulation Loop
     manager.Print() << "Simulation start time " << timeInfo->tm_hour << ":" << timeInfo->tm_min << ":" << timeInfo->tm_sec << std::endl;
@@ -273,33 +270,26 @@ int main(int argc, char **argv)
         // 100Hz Neural Controller
         if(dynTime >= TICK && std::abs(remainder(dynTime,TICK)) < 0.00001)
         {
-          if (punish){
-            reward = -50;
-            punish = false;
-          }
-          else
-            reward = 50*cos(q(0,0));
-
           prevStep = tickt/dynStep;
           prevState = state.col(prevStep);
+          prevRew =  environment(REWARD, prevStep);
 
           if (dynTime >= loadDopa)
             outhandler->SendState(prevState, tickt);
 
           // Dopaminergic Neurons Stimulation
-          tdError = 0;
           outhandler->SendReward(tdError, tickt);
 
           runtime->tick();  // Music Communication: spikes are sent and received here
           tickt = runtime->time();
 
-          policy = inhandler->GetAction(tickt);       // Policy
-          dopaActivity = inhandler->GetDopa(tickt);   // Dopaminergi neurons activity
-          value = inhandler->GetValue(tickt, reward); // Value Function and TD-error
+          policy = inhandler->GetAction(tickt);        // Policy
+          dopaActivity = inhandler->GetDopa(tickt);    // Dopaminergi neurons activity
+          value = inhandler->GetValue(tickt, prevRew); // Value Function and TD-error
           valueFunction = value[0];
           tdError = value[1];
 
-          if (clockStop >= 0)
+          if (dynTime > punishTime + TICK && dynTime <= startSim)
             tdError = 0;
         }
 
@@ -319,24 +309,33 @@ int main(int argc, char **argv)
 
         // Environment (RoboBee) generates the new state and reward
         q = bee.BeeDynamics(u);
+        reward = 50*cos(q(0,0));
 
         // Check Boundaries
-        robotPos = std::pow(q(6,0),2)/4 + std::pow(q(7,0),2)/4 + std::pow(q(8,0)-q_desired(8,0),2);
+        if (dynTime >= startSim)
+          robotPos = std::pow(q(6,0),2)/4 + std::pow(q(7,0),2)/4 + std::pow(q(8,0)-q_desired(8,0),2);
+
         if (std::abs(q(0,0)) > thetaBound || std::abs(q(3,0)) > omegaBound || robotPos > cageBound){
-          clockStop = 0.2;
-          punish = true;
+          crashState = state.col(tickt/dynStep);
           trialTime = dynTime - startSim;
-          manager.Print() << trials << "   " << trialTime << std::endl;
-          startSim = dynTime + clockStop;
+          manager.Print() << trials << "   " << startSim << "   " << dynTime << "   " << trialTime << std::endl;
+          punishTime = tickt + TICK;
+          startSim = punishTime + clockStop;
           trials++;
+          robotPos = 0;
         }
 
         // Stop Simulation
-        if (clockStop >= 0){
+        if (dynTime <= punishTime + TICK){
+          q = crashState;
+          reward = -50;
+          bee.SetState(q);
+          ctr.Reset();
+        }
+        else if (dynTime > punishTime + TICK && dynTime <= startSim) {
           q = q0;
           bee.SetState(q);
           ctr.Reset();
-          clockStop-=dynStep;
         }
 
         // Increment Counters
@@ -379,14 +378,6 @@ int main(int argc, char **argv)
     netParams.load("BeeBrain/connToActor.dat");
     netParams.save(netFolder + "connToActor.dat",arma::raw_ascii);
     netParams.clear();
-
-    Plotter Plot(folder);
-    Plot.InState();
-    Plot.Control();
-    Plot.RobotPos();
-    Plot.NetActivity();
-    Plot.EnvActivity();
-    Plot.ValueMat(thetaBound, omegaBound);
 
 /*========================================================================================================================*/
 
