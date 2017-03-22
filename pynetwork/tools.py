@@ -114,3 +114,18 @@ def plot2Dweights(W,title,xlabel,ylabel):
   plt.ylabel(ylabel)
 
   # plt.show()
+
+def latexReshape(X,Y,Z):
+    dim = len(X)
+    a = []
+    b = []
+    c = []
+
+    for i in range(dim):
+        a = np.append(a,X);
+        b = np.append(b,np.ones(dim)*Y[i])
+        c = np.append(c,Z[i])
+
+    R = np.column_stack((a,b,c))
+        
+    return R
