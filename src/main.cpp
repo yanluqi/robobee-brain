@@ -234,10 +234,12 @@ int main(int argc, char **argv)
            loadDopa = 1.0,          // Dopaminergic neurons loading time
            startSim = 2.0,          // Simulation start time
            punishTime = -1.0,        // Time of punish deliverying
-           clockStop = 0.5,         // Resting time between trials
+           clockStop = 1.0,         // Resting time between trials
            trialTime = 0,           // Record duration of each trial
            prevRew = 0,
            robotPos = 0,
+           thetaCheck = 0,
+           omegaCheck = 0,
            cageBound = std::pow(q_desired(8,0),2),
            omegaBound = 6*pi+pi/2,
            thetaBound = pi;
@@ -245,7 +247,8 @@ int main(int argc, char **argv)
     bool netControl = true;
 
     arma::mat prevState(12,1, arma::fill::zeros),
-              crashState(12,1, arma::fill::zeros);
+              crashState(12,1, arma::fill::zeros),
+              falseState(12,1, arma::fill::zeros);
 
     // Simulation Loop
     manager.Print() << "Simulation start time " << timeInfo->tm_hour << ":" << timeInfo->tm_min << ":" << timeInfo->tm_sec << std::endl;
@@ -312,16 +315,21 @@ int main(int argc, char **argv)
         reward = 50*cos(q(0,0));
 
         // Check Boundaries
-        if (dynTime >= startSim)
-          robotPos = std::pow(q(6,0),2)/4 + std::pow(q(7,0),2)/4 + std::pow(q(8,0)-q_desired(8,0),2);
+        if (dynTime >= startSim){
+            robotPos = std::pow(q(6,0),2)/4 + std::pow(q(7,0),2)/4 + std::pow(q(8,0)-q_desired(8,0),2);
+            thetaCheck = std::abs(q(0,0));
+            omegaCheck = std::abs(q(3,0));
+        }
 
-        if (std::abs(q(0,0)) > thetaBound || std::abs(q(3,0)) > omegaBound || robotPos > cageBound){
+        if (thetaCheck > thetaBound || omegaCheck > omegaBound || robotPos > cageBound){
           crashState = state.col(tickt/dynStep);
           trialTime = dynTime - startSim;
           manager.Print() << trials << "   " << startSim << "   " << dynTime << "   " << trialTime << std::endl;
           punishTime = tickt + TICK;
           startSim = punishTime + clockStop;
           trials++;
+          thetaCheck = 0;
+          omegaCheck = 0;
           robotPos = 0;
         }
 
