@@ -35,7 +35,7 @@ MONITOR = False
 # Active LOAD variable if you want to initialize the network with weights got in previous simulations
 LOAD = False
 # Simulation Time (if you modify this parameter remember to adjust it into the config file too)
-simt = 15*ms;
+simt = 20*ms;
 # Load network's parameters
 box = ParametersBox()
 # Create an instance of the class BeeBrain
