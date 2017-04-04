@@ -35,7 +35,7 @@ MONITOR = False
 # Active LOAD variable if you want to initialize the network with weights got in previous simulations
 LOAD = False
 # Simulation Time (if you modify this parameter remember to adjust it into the config file too)
-simt = 20*ms;
+simt = 100*ms;
 # Load network's parameters
 box = ParametersBox()
 # Create an instance of the class BeeBrain
@@ -62,14 +62,14 @@ if MONITOR:
 	dopa_rate = []
 	tempo = []
 	weight_mean.append(np.mean(nest.GetStatus(connCritic, 'weight')))
-	dopa_rate.append(nest.GetStatus(connCritic, 'c')[100])
+	dopa_rate.append(nest.GetStatus(connCritic, 'n')[100])
 	tempo.append(epoch)
 
 	while epoch < simt:
 		net.run(box,1.0)
 		epoch += 1.0
 		weight_mean.append(np.mean(nest.GetStatus(connCritic, 'weight')))
-		dopa_rate.append(nest.GetStatus(connCritic, 'c')[100])
+		dopa_rate.append(nest.GetStatus(connCritic, 'n')[100])
 		tempo.append(epoch)
 
 	plt.figure()
@@ -113,8 +113,19 @@ np.savetxt('BeeBrain/criticIDs.dat', nest.GetNodes(net.critic)[0], delimiter=','
 np.savetxt('BeeBrain/actorIDs.dat', nest.GetNodes(net.actor)[0], delimiter=',')
 np.savetxt('BeeBrain/connToCritic.dat', connToCritic, delimiter=',')
 np.savetxt('BeeBrain/connToActor.dat', connToActor, delimiter=',')
-np.save('BeeBrain/weightStory', np.column_stack((wr['senders'],wr['targets'], wr['times'], wr['weights'])))
+# np.save('BeeBrain/weightStory', np.column_stack((wr['senders'],wr['targets'], wr['times'], wr['weights'])))
 
 # Plot & Save Cortex activity
-# nest.raster_plot.from_device(net.sdetector, hist=True)
-# plt.savefig('BeeBrain/spikes_cortex.png', bbox_inches='tight')
+# cortexSpikes = nest.GetStatus(net.sdetector, 'events')[0]
+# np.save('BeeBrain/cortexSpikes.dat', np.column_stack((cortexSpikes['senders'],cortexSpikes['times'])))
+# criticSpikes = nest.GetStatus(net.sdetector, 'events')[1]
+# np.save('BeeBrain/criticSpikes.dat', np.column_stack((criticSpikes['senders'], criticSpikes['times'])))
+# actorSpikes = nest.GetStatus(net.sdetector, 'events')[2]
+# np.save('BeeBrain/actorSpikes.dat', np.column_stack((actorSpikes['senders'], actorSpikes['times'])))
+# dopaSpikes = nest.GetStatus(net.sdetector, 'events')[3]
+# np.save('BeeBrain/dopaSpikes.dat', np.column_stack((dopaSpikes['senders'], dopaSpikes['times'])))
+#
+# nest.raster_plot.from_device([net.sdetector[0]], hist=True)
+# plt.savefig('BeeBrain/cortexSpikes.png', bbox_inches='tight')
+# nest.raster_plot.from_device([net.sdetector[1]], hist=True)
+# plt.savefig('BeeBrain/criticSpikes.png', bbox_inches='tight')
