@@ -40,8 +40,8 @@ class BeeBrain(object):
   built       = False
   connected   = False
   debug       = False
-  basenoise   = True
-  detectpops  = False
+  basenoise   = True # False
+  detectpops  = True # False
   rec_nodes   = []
 
   def __init__(self):
@@ -132,7 +132,7 @@ class BeeBrain(object):
     pos = [[np.random.uniform(x[0],x[1]), np.random.uniform(y[0],y[1])] for j in range(params['number'])]
     self.critic = tp.CreateLayer({'center': params['center'], 'extent': params['extent'],
                                  'positions': pos, 'elements': params['model']})
-    self.randomize(nest.GetNodes(self.critic)[0], box.rand_param(), 'normal')
+    # self.randomize(nest.GetNodes(self.critic)[0], box.rand_param(), 'normal')
 
     self.rec_nodes = self.rec_nodes + list(nest.GetNodes(self.critic)[0])
 
@@ -153,7 +153,7 @@ class BeeBrain(object):
     pos = [[np.random.uniform(x[0],x[1]), np.random.uniform(y[0],y[1])] for j in range(params['number'])]
     self.actor = tp.CreateLayer({'center': params['center'], 'extent': params['extent'],
                                  'positions': pos, 'elements': params['model']})
-    self.randomize(nest.GetNodes(self.actor)[0], box.rand_param(), 'normal')
+    # self.randomize(nest.GetNodes(self.actor)[0], box.rand_param(), 'normal')
 
     self.rec_nodes = self.rec_nodes + list(nest.GetNodes(self.actor)[0])
 
@@ -303,8 +303,7 @@ class BeeBrain(object):
         self.cdict_plastic_critic = {'connection_type'       : 'divergent',
                                      'synapse_model'         : 'plastic',
                                     #'number_of_connections' :  50,
-                                    #  'weights'               : 100.0,
-                                      'weights'               :  {'uniform': {'min': 0.0, 'max': 100.0}},
+                                     'weights'               :  {'uniform': {'min': 0.0, 'max': 1.0}},
                                     # 'weights': {'gaussian': {'p_center': 90., 'sigma': 5.}}
                                     }
         tp.ConnectLayers(self.cortex, self.critic, self.cdict_plastic_critic)
@@ -325,7 +324,7 @@ class BeeBrain(object):
         self.cdict_plastic_actor = {'connection_type'       : 'divergent',
                                     'synapse_model'         : 'plastic',
                                   # 'number_of_connections' :  50,
-                                    'weights'               :  {'uniform': {'min': 0.0, 'max': 100.0}},
+                                    'weights'               :  {'uniform': {'min': 0.0, 'max': 1.0}},
                                    }
         tp.ConnectLayers(self.cortex, self.actor, self.cdict_plastic_actor)
 #============================#
@@ -334,8 +333,8 @@ class BeeBrain(object):
     """
     Lateral connections among actor neurons to reinforce N-winners take all
     """
-    w_max = 40.0
-    w_min = -60.0
+    w_max = 1.0
+    w_min = -1.5
     actors = nest.GetNodes(self.actor)[0]
     self.norm = np.zeros(len(actors))
     curr_weight = 0.0
