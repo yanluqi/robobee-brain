@@ -25,6 +25,7 @@ Sender::Sender(MUSIC::EventOutputPort *outport, double TICK)
 {
     outputPort = outport;
     psgRate = 0;
+    dist = 0;
     pi = 3.1415926535897;
     window = TICK;
     spikeGen = new Encoder(window);
@@ -93,7 +94,7 @@ void Sender::CreatePlaceCells (int numState, int *stateId, int *stateRes, bool *
       exit_cond = exit_cond + (pCells[i].size()-1);
 }
 
-void Sender::SendState (arma::mat& q, double tickt)
+void Sender::SendState (arma::vec& q, double tickt)
 {
   while (!status) {
 
@@ -120,16 +121,23 @@ void Sender::SendState (arma::mat& q, double tickt)
               psgRate = max_psg;
               for (int i = 0; i < r; ++i)
               {
-                  if (angle[i] && std::abs(2*pi + q(idState[i],0) - pCells[i][arrs[i]]) < std::abs(q(idState[i],0) - pCells[i][arrs[i]]))
-                      psgRate = psgRate/std::exp(std::pow(2*pi + q(idState[i],0) - pCells[i][arrs[i]], 2) / std::pow(std::abs(rangeState[i])/resState[i], 2));
-                  else
-                      psgRate = psgRate/std::exp(std::pow(q(idState[i],0) - pCells[i][arrs[i]], 2) / std::pow(std::abs(rangeState[i])/resState[i], 2));
-
+                  if (angle[i]){ // Calculate angular distance
+                    dist = atan2(sin(q(idState[i]) - pCells[i][arrs[i]]), cos(q(idState[i]) - pCells[i][arrs[i]]));
+                    psgRate = psgRate/std::exp(std::pow(dist, 2) / std::pow(std::abs(rangeState[i])/resState[i], 2));
+                  }
+                  else{ // Calculate linear distance
+                    dist = q(idState[i]) - pCells[i][arrs[i]];
+                    psgRate = psgRate/std::exp(std::pow(dist, 2) / std::pow(std::abs(rangeState[i])/resState[i], 2));
+                  }
               }
-              if (angle[r] && std::abs(2*pi + q(idState[r],0) - pCells[r][arrs[r]-1]) < std::abs(q(idState[r],0) - pCells[r][arrs[r]-1]))
-                  psgRate = psgRate/std::exp(std::pow(2*pi + q(idState[r],0) - pCells[r][arrs[r]-1], 2) / std::pow(std::abs(rangeState[r])/resState[r], 2));
-              else
-                  psgRate = psgRate/std::exp(std::pow(q(idState[r],0) - pCells[r][arrs[r]-1], 2) / std::pow(std::abs(rangeState[r])/resState[r], 2));
+              if (angle[r]){ // Calculate angular distance
+                dist = atan2(sin(q(idState[r]) - pCells[r][arrs[r]-1]), cos(q(idState[r]) - pCells[r][arrs[r]-1]));
+                psgRate = psgRate/std::exp(std::pow(dist, 2) / std::pow(std::abs(rangeState[r])/resState[r], 2));
+              }
+              else{ // Calculate linear distance
+                dist = q(idState[r]) - pCells[r][arrs[r]-1];
+                psgRate = psgRate/std::exp(std::pow(dist, 2) / std::pow(std::abs(rangeState[r])/resState[r], 2));
+              }
 
               spikeGen->PoissonSpikeGenerator(outputPort, psgRate, tickt, cellsCounter);
               cellsCounter++;
@@ -167,3 +175,9 @@ double Sender::InputRate(
 
   return std::abs(reward-minRew)/Q + minRate;
 }
+
+// && std::abs(2*pi + q(idState[i]) - pCells[i][arrs[i]]) < std::abs(q(idState[i]) - pCells[i][arrs[i]])
+// psgRate = psgRate/std::exp(std::pow(2*pi + q(idState[i]) - pCells[i][arrs[i]], 2) / std::pow(std::abs(rangeState[i])/resState[i], 2));
+//
+//  && std::abs(2*pi + q(idState[r]) - pCells[r][arrs[r]-1]) < std::abs(q(idState[r]) - pCells[r][arrs[r]-1])
+//  psgRate = psgRate/std::exp(std::pow(2*pi + q(idState[r]) - pCells[r][arrs[r]-1], 2) / std::pow(std::abs(rangeState[r])/resState[r], 2));
