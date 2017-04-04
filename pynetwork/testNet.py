@@ -24,7 +24,7 @@ from tools import *
 from bee_classes import *
 from param_classes import*
 
-LOAD = True
+LOAD = False
 
 nest.ResetKernel()
 
@@ -56,3 +56,7 @@ plot2Dweights(W1, 'Critic Weights','Critic Neurons','Place Cells')
 W2 = weightMatrix(nest.GetStatus(connActor, 'source'), nest.GetStatus(connActor, 'target'), weightsActor)
 plot3Dweights(W2, 'Actor Weights','Actor Neurons','Place Cells')
 plot2Dweights(W2, 'Actor Weights','Actor Neurons','Place Cells')
+
+latconn = nest.GetConnections(nest.GetNodes(net.actor)[0], nest.GetNodes(net.actor)[0])
+W3 = weightMatrix(nest.GetStatus(latconn, 'source'), nest.GetStatus(latconn, 'target'), nest.GetStatus(latconn, 'weight'))
+plot3Dweights(W3, 'Actor Lateral Connectivity','Actor ID','Actor ID')
