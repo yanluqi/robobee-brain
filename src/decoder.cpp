@@ -51,8 +51,8 @@ double Decoder::BoxKernel(double tickt, std::vector <double> *spikes)
 
 double Decoder::AlphaKernel(double tickt, std::vector <double> *spikes)
 {
-    double max_value, alpha = 100;
-    max_value = std::pow(alpha,2)*(1/alpha)*std::exp(-1);
+    double alpha = 10,
+					 max_k = std::pow(alpha,2)*(1/alpha)*std::exp(-1);
 
     if (spikes->empty())
         counter = 0;
@@ -60,7 +60,7 @@ double Decoder::AlphaKernel(double tickt, std::vector <double> *spikes)
     {
         for (int i=0; i!=spikes->size(); ++i) {
             if (spikes->at(i)<=tickt && spikes->at(i)>=tickt - delta_t)
-                counter = counter + std::pow(alpha,2)*(tickt-spikes->at(i))*std::exp(-alpha*(tickt-spikes->at(i)))/max_value;
+                counter = counter + std::pow(alpha,2)*(tickt-spikes->at(i))*std::exp(-alpha*(tickt-spikes->at(i)))/max_k;
         }
     }
 
@@ -92,7 +92,10 @@ double Decoder::ExpKernel(double tickt, std::vector <double> *spikes)
 
 double Decoder::NLKernel(double tickt, std::vector <double> *spikes)
 {
-    double tau_d = 0.2, tau_r = 0.05;
+    double tau_d = 0.1,
+					 tau_r = 0.025,
+					 max_x = tickt - log(tau_d/tau_r)/(1/tau_r - 1/tau_d),
+					 max_k = (std::exp(-(tickt-max_x)/tau_d) - std::exp(-(tickt-max_x)/tau_r))/(tau_d - tau_r);
 
     if (spikes->empty())
         counter = 0;
@@ -100,7 +103,7 @@ double Decoder::NLKernel(double tickt, std::vector <double> *spikes)
     {
         for (int i=0; i!=spikes->size(); ++i) {
             if (spikes->at(i)<=tickt && spikes->at(i)>=tickt - delta_t)
-                counter = counter + (std::exp(-(tickt-spikes->at(i))/tau_d) - std::exp(-(tickt-spikes->at(i))/tau_r))/(tau_d - tau_r);
+                counter = counter + (std::exp(-(tickt-spikes->at(i))/tau_d) - std::exp(-(tickt-spikes->at(i))/tau_r))/(tau_d - tau_r)/max_k;
         }
     }
 
@@ -112,7 +115,10 @@ double Decoder::NLKernel(double tickt, std::vector <double> *spikes)
 
 double Decoder::NLKernelDev(double tickt, std::vector <double> *spikes)
 {
-    double tau_d = 0.2, tau_r = 0.05;
+	double tau_d = 0.1,
+				 tau_r = 0.025,
+				 max_x = tickt - log(tau_d/tau_r)/(1/tau_r - 1/tau_d),
+				 max_k = (std::exp(-(tickt-max_x)/tau_d) - std::exp(-(tickt-max_x)/tau_r))/(tau_d - tau_r);
 
     if (spikes->empty())
         counter = 0;
@@ -120,7 +126,7 @@ double Decoder::NLKernelDev(double tickt, std::vector <double> *spikes)
     {
         for (int i=0; i!=spikes->size(); ++i) {
             if (spikes->at(i)<=tickt && spikes->at(i)>=tickt - delta_t)
-                counter = counter + (-(1/tau_d)*std::exp(-(tickt-spikes->at(i))/tau_d) + (1/tau_r)*std::exp(-(tickt-spikes->at(i))/tau_r))/(tau_d - tau_r);
+                counter = counter + (-(1/tau_d)*std::exp(-(tickt-spikes->at(i))/tau_d) + (1/tau_r)*std::exp(-(tickt-spikes->at(i))/tau_r))/(tau_d - tau_r)/max_k;
         }
     }
 
