@@ -53,23 +53,23 @@ int main(int argc, char **argv)
 ==================*/
 
     const double pi = 3.1415926535897;
-    arma::mat q, q0, q_desired,
-              u(4,1, arma::fill::zeros);
 
-    // Define Initial & Desired State
-    q0 << 0.20 << arma::endr << -0.2 << arma::endr << 0.00 << arma::endr        // Angular Position (Body Attached)
-       << 0.00 << arma::endr << 0.00 << arma::endr << 1.00 << arma::endr             // Angular Velocity (Body Attached)
-       << 0.04 << arma::endr << 0.04 << arma::endr << 0.01 << arma::endr    // Linear Postion (Inertial Frame)
-       << 0.10 << arma::endr << -0.3 << arma::endr << 0.00;                     // Linear Velocity (Body Attached)
+    arma::vec q,
+              q0,
+              q_desired(12, arma::fill::zeros),
+              u(4, arma::fill::zeros);
 
-    q_desired << 0 << arma::endr << 0 << arma::endr << 0 << arma::endr
-              << 0 << arma::endr << 0 << arma::endr << 0 << arma::endr
-              << 0 << arma::endr << 0 << arma::endr << 0.08 << arma::endr
-              << 0 << arma::endr << 0 << arma::endr << 0;
+    q0 = { 0.2, -0.2,    0,	 	// Angular Position (Body Attached)
+             0,    0,    0, 	// Angular Velocity (Body Attached) -1,0,1
+          0.04, 0.04, 0.01, 	// Linear Postion (Inertial Frame)
+           0.1, -0.3,    0};	// Linear Velocity (Body Attached)
+
+    q_desired(8) = 0.08;
 
     q = q0;
+
     double dynFreq = 1000, dynStep = 1/dynFreq,
-           reward = 50*cos(q(0,0));
+           reward = 25*cos(q(0)) + 25*cos(q(3));
 
     // Objects Creation
     Robobee bee(q, dynFreq);     // ROBOBEE
@@ -123,7 +123,7 @@ int main(int argc, char **argv)
     /* NETWORK OUTPUT */
     int pops_size [] = {50, 60, 100}; // [critic_size, actor_size, dopa_size]
 
-    double value_param[] = {1.5, -70.0, 30},       // [A_critic, b_critic, tau_r]
+    double value_param[] = {1.5, -100.0, 1.0},       // [A_critic, b_critic, tau_r]
            policy_param[] = {2e-6, -2e-6},          // [F_max, F_min]
            dopa_param[] = {1, 0},                   // [A_dopa, b_dopa]
            *value,
@@ -140,7 +140,7 @@ int main(int argc, char **argv)
     inhandler->SetDopa(2, dopa_param);
 
     /* NETWORK INPUT */
-    double max_psg = 500,            // Max rate Poisson process for place cells
+    double max_psg = 1000,            // Max rate Poisson process for place cells
            ranges[] = {2*pi, -6*pi}; // Range per state (negative means symmetric with respect to the origin)
 
     int idState[] = {0,3},           // Define array with States' ID you want to use
@@ -149,7 +149,7 @@ int main(int argc, char **argv)
     bool types[] = {true, false};    // true->angle false->anyother
 
     Sender *outhandler = new Sender(outdata, TICK);
-    outhandler->CreatePlaceCells(2, idState, resState, types, ranges, 700);
+    outhandler->CreatePlaceCells(2, idState, resState, types, ranges, max_psg);
 
     // Mapping Input/Output Port
     outdata->map(&outindex, MUSIC::Index::GLOBAL);
@@ -196,6 +196,7 @@ int main(int argc, char **argv)
     }
 
     double lenghtVecs = dynFreq*simt + 1;
+    arma::vec timeSim(lenghtVecs, 1);
 
     // Agent
     enum{VALUEFUN,POLICY,DOPA};
@@ -205,7 +206,6 @@ int main(int argc, char **argv)
     enum {REWARD,TDERROR};
     arma::mat environment(2, lenghtVecs);
     arma::mat state(q.size(), lenghtVecs),
-              timeSim(lenghtVecs, 1),
               control(u.size(),lenghtVecs);
 
     // OpenGL frames
@@ -214,7 +214,6 @@ int main(int argc, char **argv)
 
     Iomanager manager("BeeBrain/", folder);
     manager.SetStream("trials.dat", "out");
-    manager.Print() << "Column 1 -> Trial Number\nColumn 2 -> Trial Duration\n" << std::endl;
 
 /*========================================================================================================================*/
 
@@ -240,26 +239,33 @@ int main(int argc, char **argv)
            robotPos = 0,
            thetaCheck = 0,
            omegaCheck = 0,
-           cageBound = std::pow(q_desired(8,0),2),
-           omegaBound = 6*pi+pi/2,
-           thetaBound = pi;
+           cageBound = std::pow(q_desired(8),2),
+           thetaBound = 2*abs(ranges[0]),
+           omegaBound = abs(ranges[1]),
+           controlRate = 0.0,
+           cumulativeRew = 0.0;
 
     bool netControl = true;
 
-    arma::mat prevState(12,1, arma::fill::zeros),
-              crashState(12,1, arma::fill::zeros),
-              falseState(12,1, arma::fill::zeros);
+    arma::vec prevState(12, arma::fill::zeros),
+              crashState(12, arma::fill::zeros),
+              falseState(12, arma::fill::zeros);
 
     // Simulation Loop
     manager.Print() << "Simulation start time " << timeInfo->tm_hour << ":" << timeInfo->tm_min << ":" << timeInfo->tm_sec << std::endl;
+    manager.Print() << std::setw(15) << "Trial"
+                    << std::setw(15) << "Start Time"
+                    << std::setw(15) << "End Time"
+                    << std::setw(15) << "Trial Time"
+                    << std::setw(15) << "Avg Reward" << std::endl;
     while (tickt < simt) {
 
         // Real Time Robot Motion with 100Hz framerate
         if (ANIMATE && std::abs(remainder(tickt,frameRate)) < 0.00001){
           Frame->Clear(0.0f, 0.1f, 0.15f, 1.0f);
 			    myShader->Bind();
-			    Robot->SetPos( glm::vec3( q(7,0), q(8,0), q(6,0) ) );
-			    Robot->SetRot( glm::vec3( q(1,0), q(2,0), q(0,0) ) );
+			    Robot->SetPos( glm::vec3( q(7), q(8), q(6) ) );
+			    Robot->SetRot( glm::vec3( q(1), q(2), q(0) ) );
 			    myShader->Update(*Robot, *Cam, *Lamp);
 			    Robot->Draw();
 			    myShader->Update(*Base, *Cam, *Lamp);
@@ -276,12 +282,13 @@ int main(int argc, char **argv)
           prevStep = tickt/dynStep;
           prevState = state.col(prevStep);
           prevRew =  environment(REWARD, prevStep);
+          cumulativeRew += prevRew;
 
           if (dynTime >= loadDopa)
-            outhandler->SendState(prevState, tickt);
+            outhandler->SendState(prevState, tickt); // falseState
 
           // Dopaminergic Neurons Stimulation
-          outhandler->SendReward(tdError, tickt);
+          outhandler->SendReward(tdError, tickt); // 0
 
           runtime->tick();  // Music Communication: spikes are sent and received here
           tickt = runtime->time();
@@ -297,7 +304,7 @@ int main(int argc, char **argv)
         }
 
         // Recording
-        timeSim(iter,0) = dynTime;
+        timeSim(iter) = dynTime;
         state.col(iter) = q;
         control.col(iter) = u;
         network(VALUEFUN, iter) = valueFunction;
@@ -308,41 +315,46 @@ int main(int argc, char **argv)
 
         // Activate Neural Controller
         if (netControl)
-          u(1,0) = policy;
+          u(1) = controlRate*u(1) + policy;
 
         // Environment (RoboBee) generates the new state and reward
         q = bee.BeeDynamics(u);
-        reward = 50*cos(q(0,0));
+        reward = 25*cos(q(0)) + 25*cos(q(3));
 
         // Check Boundaries
         if (dynTime >= startSim){
-            robotPos = std::pow(q(6,0),2)/4 + std::pow(q(7,0),2)/4 + std::pow(q(8,0)-q_desired(8,0),2);
-            thetaCheck = std::abs(q(0,0));
-            omegaCheck = std::abs(q(3,0));
+            robotPos = std::pow(q(6),2)/8 + std::pow(q(7),2)/8 + std::pow(q(8)-q_desired(8),2);
+            thetaCheck = std::abs(q(0));
+            omegaCheck = std::abs(q(3));
         }
 
         if (thetaCheck > thetaBound || omegaCheck > omegaBound || robotPos > cageBound){
           crashState = state.col(tickt/dynStep);
           trialTime = dynTime - startSim;
-          manager.Print() << trials << "   " << startSim << "   " << dynTime << "   " << trialTime << std::endl;
+          manager.Print() << std::setw(15) << trials
+                          << std::setw(15) << startSim
+                          << std::setw(15) << dynTime
+                          << std::setw(15) << trialTime
+                          << std::setw(15) << cumulativeRew/trialTime << std::endl;
           punishTime = tickt + TICK;
           startSim = punishTime + clockStop;
           trials++;
           thetaCheck = 0;
           omegaCheck = 0;
           robotPos = 0;
+          cumulativeRew = 0;
         }
 
         // Stop Simulation
         if (dynTime <= punishTime + TICK){
           q = crashState;
           reward = -50;
-          bee.SetState(q);
+          bee.InitRobot(q);
           ctr.Reset();
         }
         else if (dynTime > punishTime + TICK && dynTime <= startSim) {
           q = q0;
-          bee.SetState(q);
+          bee.InitRobot(q);
           ctr.Reset();
         }
 
