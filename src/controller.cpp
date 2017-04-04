@@ -21,7 +21,7 @@
 
 #include "include/controller.h"
 
-Controller::Controller(arma::mat& q_desired) // : b {0.01, 0.01, 0.02}, a {0.001, 1, 0}
+Controller::Controller(arma::vec& q_desired) // : b {0.01, 0.01, 0.02}, a {0.001, 1, 0}
 {
 	g = 9.81;
 	m = 111e-6;
@@ -31,9 +31,9 @@ Controller::Controller(arma::mat& q_desired) // : b {0.01, 0.01, 0.02}, a {0.001
 
 	q_d = q_desired;
 
-	f_l.zeros(1,1);
-	tauc_e.zeros(3,1);
-	tau_c.zeros(3,1);
+	f_l.zeros(1);
+	tauc_e.zeros(3);
+	tau_c.zeros(3);
 
 	fl_k = new double[3] {0.003, 0, 0};
 	fl_e = new double[3] {0};
@@ -52,7 +52,7 @@ Controller::~Controller()
 	delete tauc_k;
 }
 
-arma::mat Controller::AltitudeControl(arma::mat& q)
+arma::vec Controller::AltitudeControl(arma::vec& q)
 {
 	fl_e[0] = q_d(8,0) - q(8,0);
 	fl_e[1] = q_d(11,0) - q(11,0);
@@ -63,7 +63,7 @@ arma::mat Controller::AltitudeControl(arma::mat& q)
 		B.zeros(dim,1);
 		C.zeros(1,dim);
 		D.zeros(1,1);
-		x.zeros(dim,1);
+		x.zeros(dim);
 
 		// 1000Hz
 		A(0,0) = 1.367879441171442;
@@ -92,10 +92,10 @@ arma::mat Controller::AltitudeControl(arma::mat& q)
 
 	f_l = f_l + 0.8*m*g;
 
-	if (f_l(0,0) > max_f_l)
-		f_l(0,0) = max_f_l;
-	else if (f_l(0,0) < -max_f_l)
-		f_l(0,0) = -max_f_l;
+	if (f_l(0) > max_f_l)
+		f_l(0) = max_f_l;
+	else if (f_l(0) < -max_f_l)
+		f_l(0) = -max_f_l;
 
 	// if (prev_q != -10)
 	// 	fl_e[2] = fl_e[2] + ((q_d(8,0) - prev_q) + fl_e[0])*dt/2;
@@ -107,7 +107,7 @@ arma::mat Controller::AltitudeControl(arma::mat& q)
 }
 
 
-arma::mat Controller::DampingControl(arma::mat& q)
+arma::vec Controller::DampingControl(arma::vec& q)
 {
 	// Discrete Controller for the deerivative term (q.rows(3,5) -> omegabody)
 	// tau_c = tau_c + 2/T*tauc_k[1]*(q.rows(3,5) - tauc_e);
@@ -116,13 +116,13 @@ arma::mat Controller::DampingControl(arma::mat& q)
 	tau_c = tauc_k[0] * q.rows(0,2) + tauc_k[1] * q.rows(3,5); // thetabody and omegabody
 
 	for (int i; i!=3; ++i){
-		if (tau_c(i,0) > max_torque)
-			tau_c(i,0) = max_torque;
-		else if (tau_c(i,0) < -max_torque)
-			tau_c(i,0) = -max_torque;
+		if (tau_c(i) > max_torque)
+			tau_c(i) = max_torque;
+		else if (tau_c(i) < -max_torque)
+			tau_c(i) = -max_torque;
 	};
 
-	tau_c(2,0) = 0;
+	// tau_c(2) = 0;
 
 	return tau_c;
 }

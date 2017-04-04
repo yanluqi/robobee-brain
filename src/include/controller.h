@@ -30,16 +30,16 @@ class Controller
 {
 public:
 	// Constructor
-	Controller(arma::mat& q_desired);
+	Controller(arma::vec& q_desired);
 
 	// Destructor
 	~Controller();
 
 	// Altitude Controller
-	arma::mat AltitudeControl(arma::mat& q);
+	arma::vec AltitudeControl(arma::vec& q);
 
 	// Damping Controller (Attitude)
-	arma::mat DampingControl(arma::mat& q);
+	arma::vec DampingControl(arma::vec& q);
 
 	inline void Reset() { init = 0; };
 
@@ -50,16 +50,16 @@ private:
 	int init;
 
 	double g, m, T,
-				 *fl_e, // e, ed, ei
-				 *fl_k, // k, kd, ki
-				 *tauc_k,
-				 prev_q, dt,
-		   	 max_f_l,
-		   	 max_torque;
+		     *fl_e, // e, ed, ei
+		   	 *fl_k, // k, kd, ki
+		   	 *tauc_k,
+		     prev_q, dt,
+		     max_f_l,
+		     max_torque;
 
-	arma::mat q_d,
-			  A, B, C, D, x, f_l,
-			  omegabody, tau_c, tauc_e;
+	arma::mat A, B, C, D;
+
+	arma::vec q_d, x, f_l, omega, tau_c, tauc_e;
 };
 
 #endif
