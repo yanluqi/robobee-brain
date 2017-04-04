@@ -29,29 +29,57 @@
 class Robobee
 {
 public:
-	Robobee(arma::mat& q0, double frequency); 										// Constructor
+	Robobee(arma::vec& q0, double frequency); 											// Constructor
 	Robobee();																										// Default
 	~Robobee(); 																									// Destroyer
-	inline void SetState(arma::mat& q) {this->q = q;}							// Set State
-	arma::mat BeeDynamics(arma::mat& u); 													// Bee Dynamic
+	void InitRobot(arma::vec& q0);													// Set State
+	arma::vec& BeeDynamics(arma::vec& u);												// Bee Dynamic
 
 protected:
-	arma::mat RotMatrix(arma::mat& eulerAngles); 				// Get Rotation Matrix
-	arma::mat Omega2Thetadot(arma::mat& euler_theta); 	// Angular velocity -> Rate of Euler Angles
-	void BeeAerodynamics(arma::mat& v,    							// Get Aerodynamic force
-											 arma::mat& omega,
-											 arma::mat *f_d,
-											 arma::mat *tau_d);
+	void Body2World(); 				// Get Rotation Matrix
+	void Omega2ThetaDot(); 	// Angular velocity -> Rate of Euler Angles
+	void Quat2QuatDot();
+	void GetEulerAngles();
+	void GetAeroForces();
+
 
 private:
-	// Internal Constant Parameters
-	double winglength, l, h, J, b_w, c_w, r_w, m, g, ks, force_bias_x,
-		   torque_bias_y, gyro_bias_y, force_bias_y, torque_bias_x, gyro_bias_x,
-		   freq, dt;
+	// Constant Parameters
+	double winglength, 		 // Robot Wing Length
+				 l, 				 		 // Robot height
+				 h, 				 		 // Robot width
+				 Ks_xy,			 		 //
+			 	 Ks_z,			 		 //
+			 	 J_xy,			 		 //
+			 	 J_z,				 		 //
+				 m, 				 		 // mass
+				 bw,	 			 		 // aero drag on wings from wind tunnel tests, Ns/m
+				 cw, 				 		 // rot drag coeff around z [Nsm]
+				 rw, 				 		 // z-dist from ctr of wings to ctr of mass
+				 g, 				 		 // gravity acceleration
+		   	 freq, 			 		 // Integration frequency
+				 dt;				 		 // Integration step
 
-	arma::mat Jmat,
-						q;
+	arma::mat J, 			 		 // Inertial Tensor
+						Ks, 				 // Cable Stiffness Matrix
+						R, 					 // Rotation Tensor parametrized with Euler Angles (world->body)
+						W, 					 // Rotation Tensor parametrized with Euler Angles (omega->theta derivatives)
+						T; 					 // Rotation Tensor parametrized with Quaternions (omega->quaternions derivatives)
 
+	arma::vec q, 					 // Robot state
+						theta,			 // Attitude expressed in Euler Angles
+						omega, 			 // Angular velocities
+						pos, 				 // World Position
+						vel, 				 // Velocities
+						f, tau, 		 // Total forces & torques
+						f_g, 				 // Gravity force
+						rw_vec,
+						vw_vec, 				 // distance vec
+						f_d,
+						tau_d, 			 // Aerodynamic forces & torques
+						f_disturb, 	 //
+						tau_disturb, // Disturb forces & torques
+						quat; 			 // Quaternions
 };
 
 #endif
