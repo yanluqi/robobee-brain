@@ -1,6 +1,6 @@
 #include "include/plotter.h"
 
-Plotter::Plotter(const std::string& filePath, bool LOAD)
+Plotter::Plotter(const std::string& filePath, bool LOAD) : pi(3.1415926535897)
 {
   // Load Simulation Data
   folder = filePath;
@@ -105,7 +105,7 @@ Plotter::Plotter(const std::string& filePath, bool LOAD)
   BuilValueMat();
 }
 
-Plotter::Plotter() {}
+Plotter::Plotter(): pi(3.1415926535897) {}
 
 Plotter::~Plotter()
 {
@@ -521,19 +521,20 @@ void Plotter::Simulation(double start, double end) {
 
 void Plotter::BuilValueMat()
 {
-  double vRes = 0.1;
+  double vRes = 0.1,
+         wrappedAngle = 0;
 
   if (valueMat.is_empty()) {
     const double pi = 3.1415926535897;
     double omegaBound = 6*pi+pi/2,
-           thetaBound = pi,
-           vRows= 2*thetaBound/vRes + 1,
+           thetaBound = 2*pi - vRes,
+           vRows= thetaBound/vRes + 1,
            vCols= 2*omegaBound/vRes + 1;
 
     valueMat.zeros(vRows+1,vCols+1);
 
     valueMat(0,0) = vCols+1;
-    valueMat.col(0).rows(1,vRows) = arma::regspace<arma::vec>(-thetaBound, vRes, thetaBound);
+    valueMat.col(0).rows(1,vRows) = arma::regspace<arma::vec>(0, vRes, thetaBound);
     valueMat.row(0).cols(1,vCols) = arma::regspace<arma::rowvec>(-omegaBound, vRes, omegaBound);
     for (int i = 0; i < vRows; ++i)
         valueMat.col(0).row(i) = round(valueMat.col(0).row(i)/vRes)*vRes;
@@ -542,16 +543,14 @@ void Plotter::BuilValueMat()
   }
 
   for (int k = 0; k < lengthSim; k++) {
-    for (int i = 0; i < valueMat.n_rows; ++i)
-    {
-        if (valueMat(i,0) == round(theta(k,1)/vRes)*vRes)
-        {
-            for (int j = 0; j < valueMat.n_cols; ++j)
-            {
-                if (valueMat(0,j) == round(omega(k,1)/vRes)*vRes)
+    wrappedAngle = WrapTo2Pi(theta(k,1));
+    for (int i = 0; i < valueMat.n_rows; ++i) {
+      if (valueMat(i,0) == round(wrappedAngle/vRes)*vRes) {
+        for (int j = 0; j < valueMat.n_cols; ++j) {
+          if (valueMat(0,j) == round(omega(k,1)/vRes)*vRes)
                     valueMat(i, j) = value(k,1);
-            }
         }
+      }
     }
   }
 

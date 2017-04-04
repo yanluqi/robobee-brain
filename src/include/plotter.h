@@ -35,6 +35,7 @@ public:
 protected:
   void BuilValueMat();
   void XYZSurfReshape(arma::mat& A);
+  inline double WrapTo2Pi(double angle) {return angle - floor(angle/(2*pi))*(2*pi);}
 
 private:
   Gnuplot gp;
@@ -52,6 +53,8 @@ private:
             valueMat, valueReshaped;
 
   int lengthSim, dummy;
+
+  const double pi;
 
   double maxTime, limTime[2], freq,
          limTheta[2], limOmega[2],
