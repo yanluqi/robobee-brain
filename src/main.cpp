@@ -242,7 +242,7 @@ int main(int argc, char **argv)
            cageBound = std::pow(q_desired(8),2),
            thetaBound = 2*abs(ranges[0]),
            omegaBound = abs(ranges[1]),
-           controlRate = 0.0,
+           controlRate = 0.5,
            cumulativeRew = 0.0;
 
     bool netControl = true;
@@ -288,6 +288,10 @@ int main(int argc, char **argv)
             outhandler->SendState(prevState, tickt); // falseState
 
           // Dopaminergic Neurons Stimulation
+          if (tdError >= 300.0)
+            tdError = 300.0;
+          else if (tdError <= -300.0)
+            tdError = -300.0;
           outhandler->SendReward(tdError, tickt); // 0
 
           runtime->tick();  // Music Communication: spikes are sent and received here
