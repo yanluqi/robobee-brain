@@ -413,10 +413,10 @@ class ParametersBox(object):
 		# Synapse property
 		self.params['plastic']['copymodel'] = 'stdp_dopamine_synapse'
 		self.params['plastic']['model'] = 'plastic'
-		self.params['plastic']['A_minus'] = 0.00005
-		self.params['plastic']['A_plus'] = 0.00005
+		self.params['plastic']['A_minus'] = 0.000001
+		self.params['plastic']['A_plus'] = 0.000001
 		self.params['plastic']['w_max'] = 1.
-		self.params['plastic']['w_min'] = -1.
+		self.params['plastic']['w_min'] = 0.
 		self.params['plastic']['baseline'] = 31.783825818176656 # 31.352143471368557 # 31.71, 31.734262849737714
 		self.params['plastic']['tau_elegibility'] = 100. # 80.
 		self.params['plastic']['tau_dopa'] = 100.
