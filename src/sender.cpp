@@ -67,15 +67,15 @@ void Sender::CreatePlaceCells (int numState, int *stateId, int *stateRes, bool *
   std::vector <double> currDim;
   for (int i = 0; i < numState; ++i)
   {
-      if (rangeState[i] > 0)
+      if (angle[i])
       {
           for (int j = 0; j < resState[i]; ++j)
-              currDim.push_back(std::abs(rangeState[i])*j/resState[i]);
+              currDim.push_back(rangeState[i]/resState[i]*j);
       }
       else
       {
-          for (int j = -(resState[i]-1)/2; j <= (resState[i]-1)/2; ++j)
-              currDim.push_back(std::abs(2*rangeState[i])*j/(resState[i]-1));
+          for (int j = 0; j < resState[i]; ++j)
+              currDim.push_back(2*std::abs(rangeState[i])/(resState[i]-1)*j + rangeState[i]);
       }
       pCells.push_back(currDim);
       currDim.clear();
@@ -157,11 +157,11 @@ void Sender::SendState (arma::vec& q, double tickt)
 void Sender::SendReward(double reward, double tickt)
 {
   if (reward >= 0){
-    inputRew = InputRate(std::abs(reward), 0, 2000, 0, 300);
+    inputRew = InputRate(std::abs(reward), 0, 2000, 0, 400);
     spikeGen->PoissonSpikeGenerator(outputPort, inputRew, tickt, numPlaceCells);
   }
   else if (reward < 0){
-    inputRew = InputRate(std::abs(reward), 0, 500, 0, 300);
+    inputRew = InputRate(std::abs(reward), 0, 500, 0, 400);
     spikeGen->PoissonSpikeGenerator(outputPort, inputRew, tickt, numPlaceCells+1);
   }
 }
