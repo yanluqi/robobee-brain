@@ -333,8 +333,8 @@ class BeeBrain(object):
     """
     Lateral connections among actor neurons to reinforce N-winners take all
     """
-    w_max = 1.0
-    w_min = -1.5
+    w_max = 3.0
+    w_min = -6.0
     actors = nest.GetNodes(self.actor)[0]
     self.norm = np.zeros(len(actors))
     curr_weight = 0.0
