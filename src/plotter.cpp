@@ -526,7 +526,7 @@ void Plotter::BuilValueMat()
 
   if (valueMat.is_empty()) {
     const double pi = 3.1415926535897;
-    double omegaBound = 6*pi+pi/2,
+    double omegaBound = 10,
            thetaBound = 2*pi - vRes,
            vRows= thetaBound/vRes + 1,
            vCols= 2*omegaBound/vRes + 1;
