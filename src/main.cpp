@@ -69,7 +69,10 @@ int main(int argc, char **argv)
     q = q0;
 
     double dynFreq = 1000, dynStep = 1/dynFreq,
-           reward = 25*cos(q(0)) + 25*cos(q(3));
+           maxRew = 50, sigma = 3.0,
+           reward = maxRew/2*cos(q(0)) +
+                    maxRew*std::exp(-std::pow(q(3),2)/(2*std::pow(sigma,2))) - maxRew/2;
+
 
     // Objects Creation
     Robobee bee(q, dynFreq);     // ROBOBEE
@@ -141,10 +144,10 @@ int main(int argc, char **argv)
 
     /* NETWORK INPUT */
     double max_psg = 1000,            // Max rate Poisson process for place cells
-           ranges[] = {2*pi, -6*pi}; // Range per state (negative means symmetric with respect to the origin)
+           ranges[] = {2*pi, -10}; // Range per state (negative means symmetric with respect to the origin)
 
     int idState[] = {0,3},           // Define array with States' ID you want to use
-        resState[] = {7,7};          // Number of place cells per state
+        resState[] = {7,15};          // Number of place cells per state
 
     bool types[] = {true, false};    // true->angle false->anyother
 
@@ -242,8 +245,9 @@ int main(int argc, char **argv)
            cageBound = std::pow(q_desired(8),2),
            thetaBound = 2*abs(ranges[0]),
            omegaBound = abs(ranges[1]),
-           controlRate = 0.5,
-           cumulativeRew = 0.0;
+           controlRate = 0.8,
+           cumulativeRew = 0.0,
+           succTrial = 0;
 
     bool netControl = true;
 
@@ -282,16 +286,17 @@ int main(int argc, char **argv)
           prevStep = tickt/dynStep;
           prevState = state.col(prevStep);
           prevRew =  environment(REWARD, prevStep);
-          cumulativeRew += prevRew;
+          if (tickt > startSim)
+            cumulativeRew += prevRew;
 
           if (dynTime >= loadDopa)
             outhandler->SendState(prevState, tickt); // falseState
 
           // Dopaminergic Neurons Stimulation
-          if (tdError >= 300.0)
-            tdError = 300.0;
-          else if (tdError <= -300.0)
-            tdError = -300.0;
+          if (tdError >= 400.0)
+            tdError = 400.0;
+          else if (tdError <= -400.0)
+            tdError = -400.0;
           outhandler->SendReward(tdError, tickt); // 0
 
           runtime->tick();  // Music Communication: spikes are sent and received here
@@ -323,7 +328,8 @@ int main(int argc, char **argv)
 
         // Environment (RoboBee) generates the new state and reward
         q = bee.BeeDynamics(u);
-        reward = 25*cos(q(0)) + 25*cos(q(3));
+        reward = maxRew/2*cos(q(0)) +
+                 maxRew*std::exp(-std::pow(q(3),2)/(2*std::pow(sigma,2))) - maxRew/2;
 
         // Check Boundaries
         if (dynTime >= startSim){
@@ -331,10 +337,12 @@ int main(int argc, char **argv)
             thetaCheck = std::abs(q(0));
             omegaCheck = std::abs(q(3));
         }
-
+        // Crashing condition
         if (thetaCheck > thetaBound || omegaCheck > omegaBound || robotPos > cageBound){
           crashState = state.col(tickt/dynStep);
           trialTime = dynTime - startSim;
+          if (trialTime < 1.0)
+            controlRate += 0.01;
           manager.Print() << std::setw(15) << trials
                           << std::setw(15) << startSim
                           << std::setw(15) << dynTime
@@ -346,6 +354,19 @@ int main(int argc, char **argv)
           thetaCheck = 0;
           omegaCheck = 0;
           robotPos = 0;
+          cumulativeRew = 0;
+        }
+        else if (dynTime - startSim >= 5.0 && netControl) {
+          succTrial += 1;
+          controlRate -= 0.01;
+          trialTime = dynTime - startSim;
+          manager.Print() << std::setw(15) << trials
+                          << std::setw(15) << startSim
+                          << std::setw(15) << dynTime
+                          << std::setw(15) << trialTime
+                          << std::setw(15) << cumulativeRew/trialTime << std::endl;
+          startSim = tickt + TICK + clockStop;
+          trials++;
           cumulativeRew = 0;
         }
 
@@ -373,6 +394,8 @@ int main(int argc, char **argv)
     time (&timer);
     timeInfo = localtime(&timer);
     manager.Print() << "Simulation end time " << timeInfo->tm_hour << ":" << timeInfo->tm_min << ":" << timeInfo->tm_sec << std::endl;
+    manager.Print() << "Control Rate: " << controlRate << std::endl;
+    manager.Print() << "Successful trials: " << succTrial << std::endl;
 /*========================================================================================================================*/
 
 
