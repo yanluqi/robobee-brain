@@ -24,7 +24,7 @@ import numpy as np
 
 class ParametersBox(object):
 
-	n_CellsState = [7, 7] 	# Number of place cells per state
+	n_CellsState = [7, 15] 	# Number of place cells per state
 	n_Critic = 50 			# Number of critic neurons
 	n_Actor = 60 			# Number of actor neurons
 	n_Dopa = 100 			# Number of dopaminergic neurons
@@ -413,8 +413,8 @@ class ParametersBox(object):
 		# Synapse property
 		self.params['plastic']['copymodel'] = 'stdp_dopamine_synapse'
 		self.params['plastic']['model'] = 'plastic'
-		self.params['plastic']['A_minus'] = 0.000001
-		self.params['plastic']['A_plus'] = 0.000001
+		self.params['plastic']['A_minus'] = 0.0 # 0.00001
+		self.params['plastic']['A_plus'] = 5e-7
 		self.params['plastic']['w_max'] = 1.
 		self.params['plastic']['w_min'] = 0.
 		self.params['plastic']['baseline'] = 31.783825818176656 # 31.352143471368557 # 31.71, 31.734262849737714
