@@ -245,7 +245,7 @@ int main(int argc, char **argv)
            cageBound = std::pow(q_desired(8),2),
            thetaBound = 2*abs(ranges[0]),
            omegaBound = abs(ranges[1]),
-           controlRate = 0.8,
+           controlRate = 0.55,
            cumulativeRew = 0.0,
            succTrial = 0;
 

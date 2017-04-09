@@ -414,7 +414,7 @@ class ParametersBox(object):
 		self.params['plastic']['copymodel'] = 'stdp_dopamine_synapse'
 		self.params['plastic']['model'] = 'plastic'
 		self.params['plastic']['A_minus'] = 0.0 # 0.00001
-		self.params['plastic']['A_plus'] = 5e-7
+		self.params['plastic']['A_plus'] = 1e-7
 		self.params['plastic']['w_max'] = 1.
 		self.params['plastic']['w_min'] = 0.
 		self.params['plastic']['baseline'] = 31.783825818176656 # 31.352143471368557 # 31.71, 31.734262849737714

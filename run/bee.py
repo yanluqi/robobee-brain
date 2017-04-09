@@ -33,7 +33,7 @@ ms = 1000.0;
 # Active MONITOR vatiable if you want to recor weights mean change during the simulation
 MONITOR = False
 # Active LOAD variable if you want to initialize the network with weights got in previous simulations
-LOAD = False
+LOAD = True
 # Simulation Time (if you modify this parameter remember to adjust it into the config file too)
 simt = 100*ms;
 # Load network's parameters
@@ -45,7 +45,7 @@ net.build(box)
 
 # Create connections among nodes
 if LOAD:
-	net.connect(box, np.loadtxt('BeeBrain/connToCritic.dat', delimiter=","), np.loadtxt('BeeBrain/connToActor.dat', delimiter=","))
+	net.connect(box, np.loadtxt('BeeBrain/connToCritic.dat'), np.loadtxt('BeeBrain/connToActor.dat'))
 else:
 	net.connect(box)
 
@@ -76,13 +76,13 @@ if MONITOR:
 	plt.plot(tempo, weight_mean)
 	plt.grid(True)
 	plt.savefig('BeeBrain/weightsMean.png', bbox_inches='tight')
-	np.savetxt('BeeBrain/weight_mean.dat', weight_mean, delimiter=',')
+	np.savetxt('BeeBrain/weight_mean.dat', weight_mean)
 
 	plt.figure()
 	plt.plot(tempo, dopa_rate)
 	plt.grid(True)
 	plt.savefig('BeeBrain/dopaRate.png', bbox_inches='tight')
-	np.savetxt('BeeBrain/dopa_rate.dat', dopa_rate, delimiter=',')
+	np.savetxt('BeeBrain/dopa_rate.dat', dopa_rate)
 else:
 	net.run(box, simt)
 
@@ -108,11 +108,11 @@ plot3Dweights(matActorEnd - matActorStart,'Actor Weights','Actor Neurons','Place
 plt.savefig('BeeBrain/wActorChange.png', bbox_inches='tight')
 
 # Save Network Configuration
-np.savetxt('BeeBrain/pCellsIDs.dat', nest.GetNodes(net.cortex)[0], delimiter=',')
-np.savetxt('BeeBrain/criticIDs.dat', nest.GetNodes(net.critic)[0], delimiter=',')
-np.savetxt('BeeBrain/actorIDs.dat', nest.GetNodes(net.actor)[0], delimiter=',')
-np.savetxt('BeeBrain/connToCritic.dat', connToCritic, delimiter=',')
-np.savetxt('BeeBrain/connToActor.dat', connToActor, delimiter=',')
+np.savetxt('BeeBrain/pCellsIDs.dat', nest.GetNodes(net.cortex)[0])
+np.savetxt('BeeBrain/criticIDs.dat', nest.GetNodes(net.critic)[0])
+np.savetxt('BeeBrain/actorIDs.dat', nest.GetNodes(net.actor)[0])
+np.savetxt('BeeBrain/connToCritic.dat', connToCritic)
+np.savetxt('BeeBrain/connToActor.dat', connToActor)
 # np.save('BeeBrain/weightStory', np.column_stack((wr['senders'],wr['targets'], wr['times'], wr['weights'])))
 
 # Plot & Save Cortex activity

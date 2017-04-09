@@ -4,7 +4,7 @@
 
 int main(int argc, char const *argv[]) {
   std::string folder;
-  bool LOAD = false;
+  bool LOAD = true;
   int action = 0;
   double start = 0, end = 0;
 
