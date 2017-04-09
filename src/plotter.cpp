@@ -3,7 +3,14 @@
 Plotter::Plotter(const std::string& filePath, bool LOAD) : pi(3.1415926535897)
 {
   // Load Simulation Data
+  std::string picFolder(filePath + "pictures/");
+  boost::filesystem::path dir(picFolder);
+  if(boost::filesystem::create_directory(dir)) {
+      std::cout << "Success" << "\n";
+  }
+
   folder = filePath;
+  saveFolder = picFolder;
   arma::mat simtime, loader;
 
   // Simulation Time
@@ -138,7 +145,7 @@ void Plotter::InState()
   gp << "unset multiplot\n";
 
   gp << "set terminal png\n";
-  dummy = asprintf(&cmd, "set output '%s/inputState.png'\n", folder.c_str());
+  dummy = asprintf(&cmd, "set output '%s/inputState.png'\n", saveFolder.c_str());
   gp << cmd;
   gp << "set multiplot layout 2,1 title 'Input State'\n";
 
@@ -193,7 +200,7 @@ void Plotter::Control()
   gp << "unset multiplot\n";
 
   gp << "set terminal png\n";
-  dummy = asprintf(&cmd, "set output '%s/netActivity.png'\n", folder.c_str());
+  dummy = asprintf(&cmd, "set output '%s/netActivity.png'\n", saveFolder.c_str());
   gp << cmd;
   gp << "set multiplot layout 3,1 title 'Network Activity'\n";
 
@@ -256,7 +263,7 @@ void Plotter::RobotPos()
   gp << "unset multiplot\n";
 
   gp << "set terminal png\n";
-  dummy = asprintf(&cmd, "set output '%s/lateral_pos.png'\n", folder.c_str());
+  dummy = asprintf(&cmd, "set output '%s/lateral_pos.png'\n", saveFolder.c_str());
   gp << cmd;
   gp << "set multiplot layout 1,2 title 'Lateral Positions'\n";
 
@@ -315,7 +322,7 @@ void Plotter::NetActivity()
   gp << "unset multiplot\n";
 
   gp << "set terminal png\n";
-  dummy = asprintf(&cmd, "set output '%s/netActivity.png'\n", folder.c_str());
+  dummy = asprintf(&cmd, "set output '%s/netActivity.png'\n", saveFolder.c_str());
   gp << cmd;
   gp << "set multiplot layout 3,1 title 'Network Activity'\n";
 
@@ -370,7 +377,7 @@ void Plotter::EnvActivity()
   gp << "unset multiplot\n";
 
   gp << "set terminal png\n";
-  dummy = asprintf(&cmd, "set output '%s/envActivity.png'\n", folder.c_str());
+  dummy = asprintf(&cmd, "set output '%s/envActivity.png'\n", saveFolder.c_str());
   gp << cmd;
   gp << "set multiplot layout 2,1 title 'Input State'\n";
 
@@ -411,7 +418,7 @@ void Plotter::ValueMat()
   gp << "splot " << gp.file1d(valueMat) << "matrix nonuniform with lines notitle\n";
 
   gp << "set terminal png\n"; // size 350,262 enhanced font 'Verdana,10'
-  dummy = asprintf(&cmd, "set output '%s/valueMatrix.png'\n", folder.c_str());
+  dummy = asprintf(&cmd, "set output '%s/valueMatrix.png'\n", saveFolder.c_str());
   gp << cmd;
   gp << "splot " << gp.file1d(valueMat) << "matrix nonuniform with lines notitle\n";
   gp.flush();
@@ -432,7 +439,7 @@ void Plotter::Weights()
   gp << "set xlabel 'Place Cells ID'\nset ylabel 'Actor ID'\nset zlabel 'Weight'\n";
   gp << "splot " << gp.file1d(connToActor) << "using 1:2:3 with lines notitle\n";
   gp << "set terminal png\n";
-  dummy = asprintf(&cmd, "set output '%s/network/weightsActorStart.png'\n", folder.c_str());
+  dummy = asprintf(&cmd, "set output '%s/weightsActorStart.png'\n", saveFolder.c_str());
   gp << cmd;
   gp << "splot " << gp.file1d(connToActor) << "using 1:2:3 with lines notitle\n";
 
@@ -441,7 +448,7 @@ void Plotter::Weights()
   gp << "set xlabel 'Place Cells ID'\nset ylabel 'Actor ID'\nset zlabel 'Weight'\n";
   gp << "splot " << gp.file1d(connToActor) << "using 1:2:4 with lines notitle\n";
   gp << "set terminal png\n";
-  dummy = asprintf(&cmd, "set output '%s/network/weightsActorEnd.png'\n", folder.c_str());
+  dummy = asprintf(&cmd, "set output '%s/weightsActorEnd.png'\n", saveFolder.c_str());
   gp << cmd;
   gp << "splot " << gp.file1d(connToActor) << "using 1:2:4 with lines notitle\n";
 

@@ -39,7 +39,7 @@ protected:
 
 private:
   Gnuplot gp;
-  std::string folder;
+  std::string folder, saveFolder;
 
   char *cmd;
 
