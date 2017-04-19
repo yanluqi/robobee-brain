@@ -157,11 +157,11 @@ void Sender::SendState (arma::vec& q, double tickt)
 void Sender::SendReward(double reward, double tickt)
 {
   if (reward >= 0){
-    inputRew = InputRate(std::abs(reward), 0, 2000, 0, 400);
+    inputRew = InputRate(std::abs(reward), 0, 2000, 0, 1000);
     spikeGen->PoissonSpikeGenerator(outputPort, inputRew, tickt, numPlaceCells);
   }
   else if (reward < 0){
-    inputRew = InputRate(std::abs(reward), 0, 500, 0, 400);
+    inputRew = InputRate(std::abs(reward), 0, 500, 0, 1000);
     spikeGen->PoissonSpikeGenerator(outputPort, inputRew, tickt, numPlaceCells+1);
   }
 }
