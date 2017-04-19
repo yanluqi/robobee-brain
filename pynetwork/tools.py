@@ -106,7 +106,7 @@ def plot3Dweights(W,title,xlabel,ylabel):
 
 def plot2Dweights(W,title,xlabel,ylabel):
   plt.figure()
-  plt.pcolor(W,cmap=cm.jet, vmin=-50, vmax=100)
+  plt.pcolor(W,cmap=cm.jet, vmin=0, vmax=1)
   plt.colorbar()
 
   plt.title(title)
@@ -127,5 +127,28 @@ def latexReshape(X,Y,Z):
         c = np.append(c,Z[i])
 
     R = np.column_stack((a,b,c))
-        
+
     return R
+
+def actorWeights():
+    conn = np.loadtxt('BeeBrain/connToActor.dat')
+
+    thetas = 7;
+    x = np.array((0,1,2,3,-3,-2,-1))
+    omegas = 15;
+    actors = 60;
+    pCells = thetas*omegas
+    W = np.zeros((pCells,actors))
+    a = 1.0;
+    b = 0.0;
+    c = 100.0;
+    m = 1.0;
+    elem = ((actors-1) - 2*(m*(omegas-1)/2))/(thetas-1)
+
+    for i,x in enumerate(x):
+    	for y in range(omegas):
+    		for z in range(actors):
+    			g = -m*(y - (omegas-1)/2) - (x*elem - (actors-1)/2)
+    			W[i*omegas+y,z] = a*np.exp(-np.power(z-g,2)/c) - b + np.random.random_sample()*0.1
+    conn[:,3] = np.reshape(W,(1,pCells*actors))
+    np.savetxt('BeeBrain/connToActor.dat', conn)
