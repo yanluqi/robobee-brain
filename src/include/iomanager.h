@@ -48,7 +48,7 @@ public:
 	void SaveVec(const std::string& fname, std::vector<double> *vect);
 
 	// Load Data from a file
-	std::vector<double>* LoadVec(const std::string& fname);
+	std::vector<double> LoadVec(const std::string& fname);
 
 protected:
 
