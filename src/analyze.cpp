@@ -13,7 +13,7 @@ int main(int argc, char const *argv[]) {
   folder = "Simulations/" + folder + "/";
   Plotter Plot(folder, LOAD);
 
-  std::cout << "\n1. Plot Results\n2. View Simulation" << std::endl;
+  std::cout << "\n1. Plot&Save Results\n2. Plot Zoomed Results\n3. View Simulation\n4. Exit" << std::endl;
   std::cout << "Choose action: ";
   std::cin >> action;
 
@@ -32,7 +32,16 @@ int main(int argc, char const *argv[]) {
       std::cin >> start;
       std::cout << "End View Time: ";
       std::cin >> end;
+      Plot.Results(start, end);
+      break;
+    case 3:
+      std::cout << "Start View Time: ";
+      std::cin >> start;
+      std::cout << "End View Time: ";
+      std::cin >> end;
       Plot.Simulation(start, end);
+      break;
+    case 4:
       break;
     default:
       break;
