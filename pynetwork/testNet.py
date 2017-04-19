@@ -24,7 +24,7 @@ from tools import *
 from bee_classes import *
 from param_classes import*
 
-LOAD = False
+LOAD = True
 
 nest.ResetKernel()
 
@@ -33,13 +33,13 @@ net = BeeBrain()
 
 net.build(box)
 if LOAD:
-    connToCritic = np.loadtxt('BeeBrain/connToCritic.dat', delimiter=",")
-    connToActor = np.loadtxt('BeeBrain/connToActor.dat', delimiter=",")
+    connToCritic = np.loadtxt('BeeBrain/connToCritic.dat')
+    connToActor = np.loadtxt('BeeBrain/connToActor.dat')
     net.connect(box, connToCritic, connToActor)
     connCritic = nest.GetConnections(nest.GetNodes(net.cortex)[0], nest.GetNodes(net.critic)[0])
     connActor = nest.GetConnections(nest.GetNodes(net.cortex)[0], nest.GetNodes(net.actor)[0])
-    weightsCritic = np.array(nest.GetStatus(connCritic, 'weight')) - connToCritic[:,2]
-    weightsActor = np.array(nest.GetStatus(connActor, 'weight')) - connToActor[:,2]
+    weightsCritic = np.array(nest.GetStatus(connCritic, 'weight'))
+    weightsActor = np.array(nest.GetStatus(connActor, 'weight'))
 
 else:
     net.connect(box)
