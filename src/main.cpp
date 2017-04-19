@@ -127,7 +127,7 @@ int main(int argc, char **argv)
     int pops_size [] = {50, 60, 100}; // [critic_size, actor_size, dopa_size]
 
     double value_param[] = {1.5, -100.0, 1.0},       // [A_critic, b_critic, tau_r]
-           policy_param[] = {2e-6, -2e-6},          // [F_max, F_min]
+           policy_param[] = {3e-6, -3e-6},          // [F_max, F_min]
            dopa_param[] = {1, 0},                   // [A_dopa, b_dopa]
            *value,
            valueFunction = value_param[1],
@@ -245,7 +245,7 @@ int main(int argc, char **argv)
            cageBound = std::pow(q_desired(8),2),
            thetaBound = 2*abs(ranges[0]),
            omegaBound = abs(ranges[1]),
-           controlRate = 0.55,
+           controlRate = 0.0,
            cumulativeRew = 0.0,
            succTrial = 0;
 
@@ -294,9 +294,9 @@ int main(int argc, char **argv)
 
           // Dopaminergic Neurons Stimulation
           if (tdError >= 400.0)
-            tdError = 400.0;
+            tdError = 1000.0;
           else if (tdError <= -400.0)
-            tdError = -400.0;
+            tdError = -1000.0;
           outhandler->SendReward(tdError, tickt); // 0
 
           runtime->tick();  // Music Communication: spikes are sent and received here
