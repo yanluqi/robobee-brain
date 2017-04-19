@@ -31,6 +31,7 @@ public:
             const std::string& xlabel,
             const std::string& ylabel);
   void Simulation(double start, double end);
+  void Results(double start, double end);
 
 protected:
   void BuilValueMat();
@@ -50,7 +51,7 @@ private:
             reward, tdError,
             value, policy, dopa,
             connToCritic, connToActor,
-            valueMat, valueReshaped;
+            valueMat, valueReshaped, explorePath;
 
   int lengthSim, dummy;
 
@@ -62,6 +63,16 @@ private:
          limX[2], limY[2], limZ[2],
          limValue[2], limPolicy[2], limDopa[2],
          limRew[2], limTDerr[2];
+
+  enum {
+    THETA,
+    OMEGA,
+    VALUE,
+    POLICY,
+    TDERROR,
+    DOPA,
+    REWARD,
+   };
 };
 
 #endif // PLOTTER_H
