@@ -71,7 +71,7 @@ void Iomanager::SaveVec(const std::string& fname, std::vector<double> *vect)
   outData.close();
 }
 
-std::vector<double>* Iomanager::LoadVec(const std::string& fname)
+std::vector<double> Iomanager::LoadVec(const std::string& fname)
 {
   std::string path = loadDir + fname;
   std::ifstream inData (path.c_str());
@@ -86,5 +86,5 @@ std::vector<double>* Iomanager::LoadVec(const std::string& fname)
   inData.close();
   output.pop_back();
 
-  return &output;
+  return output;
 }
