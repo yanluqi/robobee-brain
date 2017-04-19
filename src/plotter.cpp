@@ -81,8 +81,8 @@ Plotter::Plotter(const std::string& filePath, bool LOAD) : pi(3.1415926535897)
   dopa.col(1) = loader.row(2).t();
   limValue[0] = arma::min(value.col(1)) - arma::min(value.col(1))*0.1;
   limValue[1] = arma::max(value.col(1)) + arma::max(value.col(1))*0.1;
-  limPolicy[0] = arma::min(policy.col(1)) - arma::min(policy.col(1))*0.1;
-  limPolicy[1] = arma::max(policy.col(1)) + arma::max(policy.col(1))*0.1;
+  limPolicy[0] = arma::min(policy.col(1));
+  limPolicy[1] = arma::max(policy.col(1));
   limDopa[0] = arma::min(dopa.col(1)) - arma::min(dopa.col(1))*0.1;
   limDopa[1] = arma::max(dopa.col(1)) + arma::max(dopa.col(1))*0.1;
   loader.clear();
@@ -423,6 +423,11 @@ void Plotter::ValueMat()
   gp << "splot " << gp.file1d(valueMat) << "matrix nonuniform with lines notitle\n";
   gp.flush();
   gp << "reset\n";
+
+  // set pm3d
+  // set hidden3d
+  // splot "trajectory.dat" using 4:6:10 title "trajectory"  with lines lt -1,\
+  //       "surface.dat" using 1:3:7 title "surface"
 }
 
 void Plotter::Weights()
@@ -482,6 +487,29 @@ void Plotter::Draw(arma::mat& data,
   gp << "plot" << gp.file1d(data) << "with lines notitle\n";
   gp.flush();
   gp << "reset\n";
+}
+
+void Plotter::Results(double start, double end) {
+  int startIndex = start*freq,
+      endIndex = end*freq;
+  double timeline [] = {start, end};
+
+  toPlot = theta.rows(startIndex,endIndex);
+  Draw(toPlot, THETA, 480, 300, 0, 0, timeline, limTheta, "Angular Position", "time [s]", "theta [rad]");
+  toPlot = omega.rows(startIndex,endIndex);
+  Draw(toPlot, OMEGA, 480, 300, 310, 0, timeline, limOmega, "Angular Velocity", "time [s]", "omega [rad/s]");
+
+  toPlot = value.rows(startIndex,endIndex);
+  Draw(toPlot, VALUE, 480, 300, 0, 250, timeline, limValue, "Value Function", "time [s]", "Value [units]");
+  toPlot = policy.rows(startIndex,endIndex);
+  Draw(toPlot, POLICY, 480, 300, 310, 250, timeline, limPolicy, "Policy", "time [s]", "Policy [Nm]");
+
+  toPlot = tdError.rows(startIndex,endIndex);
+  Draw(toPlot, TDERROR, 480, 300, 0, 500, timeline, limTDerr, "TD-error", "time [s]", "TD-error [units/s]");
+  toPlot = dopa.rows(startIndex,endIndex);
+  Draw(toPlot, DOPA, 480, 300, 310, 500, timeline, limDopa, "Dopa Activity", "time [s]", "Dopa [Hz]");
+  toPlot = reward.rows(startIndex,endIndex);
+  Draw(toPlot, REWARD, 480, 300, 620, 500, timeline, limRew, "Reward", "time [s]", "Reward [units]");
 }
 
 void Plotter::Simulation(double start, double end) {
@@ -561,6 +589,15 @@ void Plotter::BuilValueMat()
     }
   }
 
+  explorePath.zeros(lengthSim,3);
+  explorePath.col(0) = theta.col(1);
+  explorePath.col(1) = omega.col(1);
+  explorePath.col(2) = value.col(1);
+
+  for (int i = 0; i < lengthSim; i++)
+    explorePath(i,0) = WrapTo2Pi(explorePath(i,0));
+
+  explorePath.save(folder + "explorePath.dat", arma::raw_ascii);
   valueMat.save(folder + "valueMatrix.dat",arma::raw_ascii);
   XYZSurfReshape(valueMat);
   valueReshaped.save(folder + "valueReshaped.dat",arma::raw_ascii);
