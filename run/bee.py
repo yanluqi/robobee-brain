@@ -121,11 +121,13 @@ np.savetxt('BeeBrain/connToActor.dat', connToActor)
 # criticSpikes = nest.GetStatus(net.sdetector, 'events')[1]
 # np.save('BeeBrain/criticSpikes.dat', np.column_stack((criticSpikes['senders'], criticSpikes['times'])))
 # actorSpikes = nest.GetStatus(net.sdetector, 'events')[2]
-# np.save('BeeBrain/actorSpikes.dat', np.column_stack((actorSpikes['senders'], actorSpikes['times'])))
+# np.savetxt('BeeBrain/actorSpikes.dat', np.column_stack((actorSpikes['senders'], actorSpikes['times'])))
 # dopaSpikes = nest.GetStatus(net.sdetector, 'events')[3]
 # np.save('BeeBrain/dopaSpikes.dat', np.column_stack((dopaSpikes['senders'], dopaSpikes['times'])))
-#
+
 # nest.raster_plot.from_device([net.sdetector[0]], hist=True)
 # plt.savefig('BeeBrain/cortexSpikes.png', bbox_inches='tight')
 # nest.raster_plot.from_device([net.sdetector[1]], hist=True)
 # plt.savefig('BeeBrain/criticSpikes.png', bbox_inches='tight')
+# nest.raster_plot.from_device([net.sdetector[2]], hist=True)
+# plt.savefig('BeeBrain/actorSpikes.png', bbox_inches='tight')
