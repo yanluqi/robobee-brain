@@ -333,23 +333,34 @@ class BeeBrain(object):
     """
     Lateral connections among actor neurons to reinforce N-winners take all
     """
-    w_max = 3.0
-    w_min = -6.0
+    w_max = 0.1 # 30.0
+    w_min = -0.06 # -60.0
     actors = nest.GetNodes(self.actor)[0]
     self.norm = np.zeros(len(actors))
     curr_weight = 0.0
     l = 0.05
 
-    for i in range(len(actors)):
-      for j in range(len(actors)):
-        if i!=j:
-            self.norm[i] = self.norm[i] + np.exp(-np.power(i-j,2)*np.power(l,2))
-
+    norm = np.exp(-np.power(1,2)*np.power(l,2))
     for i, n in enumerate(actors):
       for j, k in enumerate(actors):
         if i!=j:
-          curr_weight = w_min/len(actors) + w_max*np.exp(-np.power(i-j,2)*np.power(l,2))/self.norm[i]
+          curr_weight = w_min + w_max*np.exp(-np.power(i-j,2)*np.power(l,2))/norm
           nest.Connect([n], [k], "one_to_one", {'weight': curr_weight})
+
+    # for i in range(len(actors)):
+    #   for j in range(len(actors)):
+    #     if i!=j:
+    #         self.norm[i] = self.norm[i] + np.exp(-np.power(i-j,2)*np.power(l,2))
+    #
+    # for i, n in enumerate(actors):
+    #   for j, k in enumerate(actors):
+    #     if i!=j:
+    #       curr_weight = w_min/len(actors) + w_max*np.exp(-np.power(i-j,2)*np.power(l,2))/self.norm[i]
+    #       nest.Connect([n], [k], "one_to_one", {'weight': curr_weight})
+
+    # pCells = nest.GetNodes(self.cortex)[0]
+    # connS = nest.GetConnections(pCells, actors[48:59])
+    # nest.SetStatus(connS, {'weight':1.0})
 
 #==========================#
 # INPUT PROXIES -> SNc/VTA #
