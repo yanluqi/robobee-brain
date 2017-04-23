@@ -33,7 +33,7 @@ ms = 1000.0;
 # Active MONITOR vatiable if you want to recor weights mean change during the simulation
 MONITOR = False
 # Active LOAD variable if you want to initialize the network with weights got in previous simulations
-LOAD = True
+LOAD = False
 # Simulation Time (if you modify this parameter remember to adjust it into the config file too)
 simt = 100*ms;
 # Load network's parameters
