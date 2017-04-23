@@ -519,6 +519,7 @@ void Plotter::Simulation(double start, double end) {
   Shader *myShader = new Shader("../graphic/vertex.glsl", "../graphic/fragment.glsl");
   Model *Base = new Model("../graphic/","base");
   Model *Robot = new Model("../graphic/","robobee");
+  Frame->SetRecorder(saveFolder + "flight.mp4");
 
   int startIndex = start*freq,
       endIndex = end*freq;
@@ -552,6 +553,12 @@ void Plotter::Simulation(double start, double end) {
     toPlot = reward.rows(startIndex,i);
     Draw(toPlot, 7, 300, 200, 620, 500, timeline, limRew, "Reward", "time [s]", "Reward [units]");
   }
+  delete Frame;
+  delete Cam;
+  delete Lamp;
+  delete myShader;
+  delete Base;
+  delete Robot;
 }
 
 void Plotter::BuilValueMat()
