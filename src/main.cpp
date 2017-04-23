@@ -261,7 +261,8 @@ int main(int argc, char **argv)
                     << std::setw(15) << "Start Time"
                     << std::setw(15) << "End Time"
                     << std::setw(15) << "Trial Time"
-                    << std::setw(15) << "Avg Reward" << std::endl;
+                    << std::setw(15) << "Avg Reward"
+                    << std::setw(15) << "Control Rate" << std::endl;
     while (tickt < simt) {
 
         // Real Time Robot Motion with 100Hz framerate
@@ -293,9 +294,9 @@ int main(int argc, char **argv)
             outhandler->SendState(prevState, tickt); // falseState
 
           // Dopaminergic Neurons Stimulation
-          if (tdError >= 400.0)
+          if (tdError >= 1000.0)
             tdError = 1000.0;
-          else if (tdError <= -400.0)
+          else if (tdError <= -1000.0)
             tdError = -1000.0;
           outhandler->SendReward(tdError, tickt); // 0
 
@@ -341,13 +342,14 @@ int main(int argc, char **argv)
         if (thetaCheck > thetaBound || omegaCheck > omegaBound || robotPos > cageBound){
           crashState = state.col(tickt/dynStep);
           trialTime = dynTime - startSim;
-          if (trialTime < 1.0)
-            controlRate += 0.01;
           manager.Print() << std::setw(15) << trials
                           << std::setw(15) << startSim
                           << std::setw(15) << dynTime
                           << std::setw(15) << trialTime
+                          << std::setw(15) << controlRate
                           << std::setw(15) << cumulativeRew/trialTime << std::endl;
+          if (trialTime < 1.0)
+            controlRate += 0.01;
           punishTime = tickt + TICK;
           startSim = punishTime + clockStop;
           trials++;
@@ -356,14 +358,15 @@ int main(int argc, char **argv)
           robotPos = 0;
           cumulativeRew = 0;
         }
-        else if (dynTime - startSim >= 5.0 && netControl) {
+        else if (dynTime - startSim >= 10.0 && netControl) {
           succTrial += 1;
-          controlRate -= 0.01;
+          // controlRate -= 0.01;
           trialTime = dynTime - startSim;
           manager.Print() << std::setw(15) << trials
                           << std::setw(15) << startSim
                           << std::setw(15) << dynTime
                           << std::setw(15) << trialTime
+                          << std::setw(15) << controlRate
                           << std::setw(15) << cumulativeRew/trialTime << std::endl;
           startSim = tickt + TICK + clockStop;
           trials++;
