@@ -519,7 +519,7 @@ void Plotter::Simulation(double start, double end) {
   Shader *myShader = new Shader("../graphic/vertex.glsl", "../graphic/fragment.glsl");
   Model *Base = new Model("../graphic/","base");
   Model *Robot = new Model("../graphic/","robobee");
-  Frame->SetRecorder(saveFolder + "flight.mp4");
+  // Frame->SetRecorder(saveFolder + "flight.mp4");
 
   int startIndex = start*freq,
       endIndex = end*freq;
