@@ -40,8 +40,8 @@ class BeeBrain(object):
   built       = False
   connected   = False
   debug       = False
-  basenoise   = True
-  detectpops  = False
+  basenoise   = True # False
+  detectpops  = True # False
   rec_nodes   = []
 
   def __init__(self):
@@ -132,7 +132,7 @@ class BeeBrain(object):
     pos = [[np.random.uniform(x[0],x[1]), np.random.uniform(y[0],y[1])] for j in range(params['number'])]
     self.critic = tp.CreateLayer({'center': params['center'], 'extent': params['extent'],
                                  'positions': pos, 'elements': params['model']})
-    self.randomize(nest.GetNodes(self.critic)[0], box.rand_param(), 'normal')
+    # self.randomize(nest.GetNodes(self.critic)[0], box.rand_param(), 'normal')
 
     self.rec_nodes = self.rec_nodes + list(nest.GetNodes(self.critic)[0])
 
@@ -153,7 +153,7 @@ class BeeBrain(object):
     pos = [[np.random.uniform(x[0],x[1]), np.random.uniform(y[0],y[1])] for j in range(params['number'])]
     self.actor = tp.CreateLayer({'center': params['center'], 'extent': params['extent'],
                                  'positions': pos, 'elements': params['model']})
-    self.randomize(nest.GetNodes(self.actor)[0], box.rand_param(), 'normal')
+    # self.randomize(nest.GetNodes(self.actor)[0], box.rand_param(), 'normal')
 
     self.rec_nodes = self.rec_nodes + list(nest.GetNodes(self.actor)[0])
 
@@ -256,7 +256,7 @@ class BeeBrain(object):
       self.build(box)
 
     params = box.plastic()
-    
+
     nest.CopyModel(params['copymodel'], params['model'],
                   {'A_minus': params['A_minus'],
                    'A_plus': params['A_plus'],
@@ -295,20 +295,20 @@ class BeeBrain(object):
     """
     Plastic connetion between place cells and critic population
     """
-    self.cdict_plastic_critic = {'connection_type'       : 'divergent',
-                                 'synapse_model'         : 'plastic',
-                                #'number_of_connections' :  50,
-                                #  'weights'               : 100.0,
-                                  'weights'               :  {'uniform': {'min': 0.0, 'max': 100.0}},
-                                # 'weights': {'gaussian': {'p_center': 90., 'sigma': 5.}}
-                                }
-
-    tp.ConnectLayers(self.cortex, self.critic, self.cdict_plastic_critic)
-
     if args:
-      conn = nest.GetConnections(target = nest.GetNodes(self.critic)[0])
-      dictW = self.createDict(args[0])
-      nest.SetStatus(conn, dictW)
+        connToCritic = args[0]
+        for i in range(len(connToCritic)):
+            nest.Connect([int(connToCritic[i,0])], [int(connToCritic[i,1])], 'one_to_one', {'model': 'plastic', 'weight': connToCritic[i,3]})
+    else:
+        self.cdict_plastic_critic = {'connection_type'       : 'divergent',
+                                     'synapse_model'         : 'plastic',
+                                    #'number_of_connections' :  50,
+                                     'weights'               :  {'uniform': {'min': 0.0, 'max': 1.0}},
+                                    # 'weights': {'gaussian': {'p_center': 90., 'sigma': 5.}}
+                                    }
+        tp.ConnectLayers(self.cortex, self.critic, self.cdict_plastic_critic)
+
+
 
 #======================#
 # PLACE CELLS -> ACTOR #
@@ -316,44 +316,51 @@ class BeeBrain(object):
     """
     Plastic connetion between place cells and actor population
     """
-    self.cdict_plastic_actor = {'connection_type'       : 'divergent',
-                                'synapse_model'         : 'plastic',
-                              # 'number_of_connections' :  50,
-                                'weights'               :  {'uniform': {'min': -50.0, 'max': 100.0}},
-                               }
-
-    tp.ConnectLayers(self.cortex, self.actor, self.cdict_plastic_actor)
-
     if args:
-      conn = nest.GetConnections(target = nest.GetNodes(self.actor)[0])
-      dictW = self.createDict(args[1])
-      nest.SetStatus(conn, dictW)
-
+        connToActor = args[1]
+        for i in range(len(connToActor)):
+            nest.Connect([int(connToActor[i,0])], [int(connToActor[i,1])], 'one_to_one', {'model': 'plastic', 'weight': connToActor[i,3]})
+    else:
+        self.cdict_plastic_actor = {'connection_type'       : 'divergent',
+                                    'synapse_model'         : 'plastic',
+                                  # 'number_of_connections' :  50,
+                                    'weights'               :  {'uniform': {'min': 0.0, 'max': 1.0}},
+                                   }
+        tp.ConnectLayers(self.cortex, self.actor, self.cdict_plastic_actor)
 #============================#
 # ACTOR LATERAL CONNECTIVITY #
 #============================#
     """
     Lateral connections among actor neurons to reinforce N-winners take all
     """
-    w_max = 30.0
-    w_min = -60.0
+    w_max = 0.1 # 30.0
+    w_min = -0.06 # -60.0
     actors = nest.GetNodes(self.actor)[0]
     self.norm = np.zeros(len(actors))
     curr_weight = 0.0
     l = 0.05
-    # self.rec_weight = np.zeros((60,60))
 
-    for i in range(len(actors)):
-      for j in range(len(actors)):
-        if i!=j:
-            self.norm[i] = self.norm[i] + np.exp(-np.power(i-j,2)*np.power(l,2))
-
+    norm = np.exp(-np.power(1,2)*np.power(l,2))
     for i, n in enumerate(actors):
       for j, k in enumerate(actors):
         if i!=j:
-          curr_weight = w_min/len(actors) + w_max*np.exp(-np.power(i-j,2)*np.power(l,2))/self.norm[i]
-        #   self.rec_weight[i][j] = curr_weight
+          curr_weight = w_min + w_max*np.exp(-np.power(i-j,2)*np.power(l,2))/norm
           nest.Connect([n], [k], "one_to_one", {'weight': curr_weight})
+
+    # for i in range(len(actors)):
+    #   for j in range(len(actors)):
+    #     if i!=j:
+    #         self.norm[i] = self.norm[i] + np.exp(-np.power(i-j,2)*np.power(l,2))
+    #
+    # for i, n in enumerate(actors):
+    #   for j, k in enumerate(actors):
+    #     if i!=j:
+    #       curr_weight = w_min/len(actors) + w_max*np.exp(-np.power(i-j,2)*np.power(l,2))/self.norm[i]
+    #       nest.Connect([n], [k], "one_to_one", {'weight': curr_weight})
+
+    # pCells = nest.GetNodes(self.cortex)[0]
+    # connS = nest.GetConnections(pCells, actors[48:59])
+    # nest.SetStatus(connS, {'weight':1.0})
 
 #==========================#
 # INPUT PROXIES -> SNc/VTA #

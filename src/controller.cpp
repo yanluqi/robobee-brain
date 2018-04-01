@@ -21,7 +21,7 @@
 
 #include "include/controller.h"
 
-Controller::Controller(arma::mat& q_desired) // : b {0.01, 0.01, 0.02}, a {0.001, 1, 0}
+Controller::Controller(arma::vec& q_desired) // : b {0.01, 0.01, 0.02}, a {0.001, 1, 0}
 {
 	g = 9.81;
 	m = 111e-6;
@@ -31,16 +31,16 @@ Controller::Controller(arma::mat& q_desired) // : b {0.01, 0.01, 0.02}, a {0.001
 
 	q_d = q_desired;
 
-	f_l.zeros(1,1);
-	tauc_e.zeros(3,1);
-	tau_c.zeros(3,1);
+	f_l.zeros(1);
+	tauc_e.zeros(3);
+	tau_c.zeros(3);
 
 	fl_k = new double[3] {0.003, 0, 0};
 	fl_e = new double[3] {0};
 	prev_q = -10;
 	dt = 0.001;
 
-	tauc_k = new double[3] {-1e-6, -2e-7, 0};
+	tauc_k = new double[3] {0.0, -2e-7, 0.0}; // -1e-6
 
 	init = 0;
 }
@@ -52,62 +52,62 @@ Controller::~Controller()
 	delete tauc_k;
 }
 
-arma::mat Controller::AltitudeControl(arma::mat& q)
+arma::vec Controller::AltitudeControl(arma::vec& q)
 {
 	fl_e[0] = q_d(8,0) - q(8,0);
 	fl_e[1] = q_d(11,0) - q(11,0);
 
-	// if (!init){
-	// 	int dim = 2;
-	// 	A.zeros(dim,dim);
-	// 	B.zeros(dim,1);
-	// 	C.zeros(1,dim);
-	// 	D.zeros(1,1);
-	// 	x.zeros(dim,1);
-	//
-	// 	// 1000Hz
-	// 	A(0,0) = 1.367879441171442;
-	// 	A(1,0) = 0.5;
-	// 	A(0,1) = -0.7357588823428847;
-	// 	B(0,0) = 4;
-	// 	C(0,0) = -0.9979390591140898;
-	// 	C(0,1) = 1.995884439433767;
-	// 	D(0,0) = 6.324887025108467;
-	//
-	// 	// 10000Hz
-	// 	// A(0,0) = 1.904837418035960;
-	// 	// A(1,0) = 1;
-	// 	// A(0,1) = -0.904837418035960;
-	// 	// B(0,0) = 1;
-	// 	// C(0,0) = -0.904685920089069;
-	// 	// C(0,1) = 0.904686110414232;
-	// 	// D(0,0) = 9.516741970724031;
-	//
-	// 	init = 1;
-	// }
-	// else{
-	// 	x = A*x + B*fl_e[0];
-	// 	f_l = C*x + D*fl_e[0];
-	// }
-	//
-	// f_l = f_l + .8*m*g;
-	//
-	// if (f_l(0,0) > max_f_l)
-	// 	f_l(0,0) = max_f_l;
-	// else if (f_l(0,0) < -max_f_l)
-	// 	f_l(0,0) = -max_f_l;
+	if (!init){
+		int dim = 2;
+		A.zeros(dim,dim);
+		B.zeros(dim,1);
+		C.zeros(1,dim);
+		D.zeros(1,1);
+		x.zeros(dim);
 
-	if (prev_q != -10)
-		fl_e[2] = fl_e[2] + ((q_d(8,0) - prev_q) + fl_e[0])*dt/2;
+		// 1000Hz
+		A(0,0) = 1.367879441171442;
+		A(1,0) = 0.5;
+		A(0,1) = -0.7357588823428847;
+		B(0,0) = 4;
+		C(0,0) = -0.9979390591140898;
+		C(0,1) = 1.995884439433767;
+		D(0,0) = 6.324887025108467;
 
-	f_l(0,0) = fl_k[0]*fl_e[0] + fl_k[1]*fl_e[1] + fl_k[2]*fl_e[2] + m*g;
-	prev_q = q(8,0);
+		// 10000Hz
+		// A(0,0) = 1.904837418035960;
+		// A(1,0) = 1;
+		// A(0,1) = -0.904837418035960;
+		// B(0,0) = 1;
+		// C(0,0) = -0.904685920089069;
+		// C(0,1) = 0.904686110414232;
+		// D(0,0) = 9.516741970724031;
+
+		init = 1;
+	}
+	else{
+		x = A*x + B*fl_e[0];
+		f_l = C*x + D*fl_e[0];
+	}
+
+	f_l = f_l + 0.8*m*g;
+
+	if (f_l(0) > max_f_l)
+		f_l(0) = max_f_l;
+	else if (f_l(0) < -max_f_l)
+		f_l(0) = -max_f_l;
+
+	// if (prev_q != -10)
+	// 	fl_e[2] = fl_e[2] + ((q_d(8,0) - prev_q) + fl_e[0])*dt/2;
+	//
+	// f_l(0,0) = fl_k[0]*fl_e[0] + fl_k[1]*fl_e[1] + fl_k[2]*fl_e[2] + m*g;
+	// prev_q = q(8,0);
 
 	return f_l;
 }
 
 
-arma::mat Controller::DampingControl(arma::mat& q)
+arma::vec Controller::DampingControl(arma::vec& q)
 {
 	// Discrete Controller for the deerivative term (q.rows(3,5) -> omegabody)
 	// tau_c = tau_c + 2/T*tauc_k[1]*(q.rows(3,5) - tauc_e);
@@ -116,13 +116,13 @@ arma::mat Controller::DampingControl(arma::mat& q)
 	tau_c = tauc_k[0] * q.rows(0,2) + tauc_k[1] * q.rows(3,5); // thetabody and omegabody
 
 	for (int i; i!=3; ++i){
-		if (tau_c(i,0) > max_torque)
-			tau_c(i,0) = max_torque;
-		else if (tau_c(i,0) < -max_torque)
-			tau_c(i,0) = -max_torque;
+		if (tau_c(i) > max_torque)
+			tau_c(i) = max_torque;
+		else if (tau_c(i) < -max_torque)
+			tau_c(i) = -max_torque;
 	};
 
-	tau_c(2,0) = 0;
+	// tau_c(2) = 0;
 
 	return tau_c;
 }

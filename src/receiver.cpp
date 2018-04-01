@@ -42,9 +42,6 @@ Receiver::~Receiver ()
 {
 	delete spikeFilter;
 	delete value;
-	delete value_param;
-	delete policy_param;
-	delete dopa_param;
 }
 
 void Receiver::operator () (double t, MUSIC::GlobalIndex id)
@@ -69,31 +66,32 @@ std::vector <std::vector <double> >* Receiver::GetSpikes(int pop)
 void Receiver::SetCritic(int idPop, double *param)
 {
 	value = new double[2];
-	value_param = new double[3];
-	idCritic = idPop;
 
-	for (int i = 0; i < 3; i++)
-		value_param[i] = param[i];
+	idCritic = idPop;
+	sizeCritic = storage[idCritic].size();
+	A_critic = param[0];
+	b_critic = param[1];
+	tau_r = param[2];
 }
 
 void Receiver::SetActor(int idPop, double *param)
 {
-	policy_param = new double[2];
 	idActor = idPop;
-
-	for (int i = 0; i < 2; i++)
-		policy_param[i] = param[i];
+	sizeActor = storage[idActor].size();
+	F_max = param[0];
+	F_min = param[1];
+	minID = 0;
+	maxID = sizeActor - 1;
+	Q = std::abs(maxID-minID)/std::abs(F_max-F_min);
 }
 
 void Receiver::SetDopa(int idPop, double *param)
 {
-	dopa_param = new double[2];
 	idDopa = idPop;
-
-	for (int i = 0; i < 2; i++)
-		dopa_param[i] = param[i];
+	sizeDopa = storage[idDopa].size();
+	A_dopa = param[0];
+	b_dopa = param[1];
 }
-
 
 double* Receiver::GetValue(double tickt, double reward)
 {
@@ -102,11 +100,11 @@ double* Receiver::GetValue(double tickt, double reward)
 	for (int i = 0; i < storage[idCritic].size(); ++i){
 			value[0] = value[0] + spikeFilter->NLKernel(tickt, &storage[idCritic][i]);
 			value[1] = value[1] + spikeFilter->NLKernelDev(tickt, &storage[idCritic][i])
-								 - spikeFilter->NLKernel(tickt, &storage[idCritic][i])/value_param[2];
+								 - spikeFilter->NLKernel(tickt, &storage[idCritic][i])/tau_r;
 	}
 
-	value[0] = (value_param[0]/storage[idCritic].size())*value[0] + value_param[1];
-	value[1] = (value_param[0]/storage[idCritic].size())*value[1] - value_param[1]/value_param[2] + reward;
+	value[0] = (A_critic/sizeCritic)*value[0] + b_critic;
+	value[1] = (A_critic/sizeCritic)*value[1] - b_critic/tau_r + reward;
 
 	return value;
 }
@@ -117,7 +115,7 @@ double Receiver::GetAction(double tickt)
 	sumActor = 0;
 	for (int i = 0; i < storage[idActor].size(); ++i){
 			sumActor = sumActor + spikeFilter->NLKernel(tickt, &storage[idActor][i]);
-			policy = policy + spikeFilter->NLKernel(tickt, &storage[idActor][i])*(2*policy_param[0]*i/storage[idActor].size() - policy_param[0]);
+			policy = policy + spikeFilter->NLKernel(tickt, &storage[idActor][i])*GetForce(i);
 	}
 
 	if (sumActor == 0)
@@ -134,7 +132,12 @@ double Receiver::GetDopa(double tickt)
 	for (int i = 0; i < storage[idDopa].size(); ++i)
 			dopaActivity = dopaActivity + spikeFilter->ExpKernel(tickt, &storage[idDopa][i]);
 
-	dopaActivity = (dopa_param[0]/storage[idDopa].size())*dopaActivity + dopa_param[1];
+	dopaActivity = (A_dopa/sizeDopa)*dopaActivity + b_dopa;
 
 	return dopaActivity;
+}
+
+double Receiver::GetForce(int k)
+{
+  return std::abs(double(k)-minID)/Q + F_min;
 }

@@ -24,7 +24,7 @@ import numpy as np
 
 class ParametersBox(object):
 
-	n_CellsState = [7, 7] 	# Number of place cells per state
+	n_CellsState = [7, 15] 	# Number of place cells per state
 	n_Critic = 50 			# Number of critic neurons
 	n_Actor = 60 			# Number of actor neurons
 	n_Dopa = 100 			# Number of dopaminergic neurons
@@ -175,7 +175,7 @@ class ParametersBox(object):
 		self.params['critic'] = {}
 
 		# MODEL
-		self.params['critic']['copymodel'] = 'iaf_neuron'
+		self.params['critic']['copymodel'] = 'iaf_chs_2007' # 'iaf_neuron'
 		self.params['critic']['model'] = 'critic_neuron'
 
 		if self.params['critic']['copymodel'] == 'iaf_neuron':
@@ -187,7 +187,7 @@ class ParametersBox(object):
  									   			'V_th'     : -55.0, # (-55.0) spike threshold (mV)
  									   			't_ref'    :   0.5, # (  2.0) absolute refractory period (ms)
  									   			'tau_m'    :  10.0, # ( 10.0) membrane time constant (ms)
- 									   			'tau_minus':  20.0, # ( 20.0)
+ 									   			'tau_minus':  10.0, # ( 20.0)
  									   			'tau_syn'  :   2.0  # (  2.0)
  									   			}
  		elif self.params['critic']['copymodel'] == 'iaf_cond_alpha':
@@ -197,14 +197,23 @@ class ParametersBox(object):
  									   			'V_m'       :   -70.0, # (  -70.0)
  									   			'V_reset'   :   -70.0, # (  -60.0) reset potential (mV)
  									   			'V_th'      :   -55.0, # (  -55.0) spike threshold (mV)
- 									   			't_ref'     :     0.5, # (    2.0) absolute refractory period (ms)
+ 									   			't_ref'     :     2.0, # (    2.0) absolute refractory period (ms)
  									   			'g_L'       : 16.6667, # (16.6667)
- 									   			'tau_minus' :    20.0, # (   20.0)
+ 									   			'tau_minus' :    10.0, # (   20.0)
   									   			'E_ex'      :     0.0, # (    0.0)
   									   			'E_in'      :   -85.0, # (  -85.0)
         	                     	   			'tau_syn_ex':     0.2, # (    0.2) excitatory synaptic time constant (ms)
         	                     	            'tau_syn_in':     2.0  # (    2.0) inhibitory synaptic time constant (ms)
         	                     	  			}
+		elif self.params['critic']['copymodel'] == 'iaf_chs_2007':
+ 			self.params['critic']['settings'] = {'V_epsp'   : 0.77,
+ 												 'V_noise'  : 0.0,
+ 											 	 'V_reset'  : 2.31,
+ 											 	 'tau_epsp' : 8.5,
+ 											 	 'tau_minus': 10.0,
+ 											 	 'tau_reset': 15.4,
+ 											 	 }
+
 
 		# LAYER
 		self.params['critic']['number'] = self.n_Critic
@@ -225,7 +234,7 @@ class ParametersBox(object):
 		self.params['actor'] = {}
 
 		# MODEL
-		self.params['actor']['copymodel'] = 'iaf_neuron'
+		self.params['actor']['copymodel'] = 'iaf_chs_2007'
 		self.params['actor']['model'] = 'actor_neuron'
 
 		if self.params['actor']['copymodel'] == 'iaf_neuron':
@@ -237,7 +246,7 @@ class ParametersBox(object):
  									   			'V_th'     : -55.0, # (-55.0) spike threshold (mV)
  									   			't_ref'    :   0.5, # (  2.0) absolute refractory period (ms)
  									   			'tau_m'    :  10.0, # ( 10.0) membrane time constant (ms)
- 									   			'tau_minus':  20.0, # ( 20.0)
+ 									   			'tau_minus':  10.0, # ( 20.0)
  									   			'tau_syn'  :   2.0  # (  2.0)
  									   			}
  		elif self.params['actor']['copymodel'] == 'iaf_cond_alpha':
@@ -249,12 +258,20 @@ class ParametersBox(object):
  									   			'V_th'      :   -55.0, # (  -55.0) spike threshold (mV)
  									   			't_ref'     :     0.5, # (    2.0) absolute refractory period (ms)
  									   			'g_L'       : 16.6667, # (16.6667)
- 									   			'tau_minus' :    20.0, # (   20.0)
+ 									   			'tau_minus' :    10.0, # (   20.0)
   									   			'E_ex'      :     0.0, # (    0.0)
   									   			'E_in'      :   -85.0, # (  -85.0)
         	                     	   			'tau_syn_ex':     0.2, # (    0.2) excitatory synaptic time constant (ms)
         	                     	            'tau_syn_in':     2.0  # (    2.0) inhibitory synaptic time constant (ms)
         	                     	  			}
+		elif self.params['actor']['copymodel'] == 'iaf_chs_2007':
+	 		self.params['actor']['settings'] = { 'V_epsp'   : 0.77,
+	 											 'V_noise'  : 0.0,
+	 											 'V_reset'  : 2.31,
+	 											 'tau_epsp' : 8.5,
+	 											 'tau_minus': 10.0,
+	 											 'tau_reset': 15.4,
+	 											 }
 
 		# LAYER
 		self.params['actor']['number'] = self.n_Actor
@@ -396,14 +413,14 @@ class ParametersBox(object):
 		# Synapse property
 		self.params['plastic']['copymodel'] = 'stdp_dopamine_synapse'
 		self.params['plastic']['model'] = 'plastic'
-		self.params['plastic']['A_minus'] = 0.05
-		self.params['plastic']['A_plus'] = 0.0475
-		self.params['plastic']['w_max'] = 100.
-		self.params['plastic']['w_min'] = -50.
-		self.params['plastic']['baseline'] = 31.734262849737714
-		self.params['plastic']['tau_elegibility'] = 120.
+		self.params['plastic']['A_minus'] = 1e-6
+		self.params['plastic']['A_plus'] = 1e-6
+		self.params['plastic']['w_max'] = 1.
+		self.params['plastic']['w_min'] = 0.
+		self.params['plastic']['baseline'] = 31.783825818176656 # 31.352143471368557 # 31.71, 31.734262849737714
+		self.params['plastic']['tau_elegibility'] = 500. # 80.
 		self.params['plastic']['tau_dopa'] = 100.
-		self.params['plastic']['tau_plus'] = 20.
+		self.params['plastic']['tau_plus'] = 10.
 		self.params['plastic']['delay'] = 0.1
 
 		return self.params['plastic']

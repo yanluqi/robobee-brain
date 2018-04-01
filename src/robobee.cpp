@@ -21,35 +21,47 @@
 
 #include "include/robobee.h"
 
-Robobee::Robobee(arma::mat& q0, double frequency)
+Robobee::Robobee(arma::vec& q0, double frequency)
 {
-	// Internal Paramaters
+	// Constant Paramaters
 	winglength = 0.6 * 2.54 / 100;
 	l = 0.013;
 	h = 0.0025;
-	J = 1.5e-9;
-	b_w = 2.0e-4;
-	c_w = std::pow(h/2 + winglength * 2./3, 2) * b_w;
-	r_w = .007;
+	Ks_xy = 0;
+	Ks_z = 0;
+	J_xy = 1.5e-9;
+	J_z = 0.5e-9;
+	bw = 2.0e-4;
+	cw = std::pow(h/2 + winglength * 2./3, 2) * bw;
+	rw = .007;
 	m = 111e-6;
 	g = 9.81;
-	ks = 0;
-	force_bias_x = 0;
-	torque_bias_y = 0;
-	gyro_bias_y = 0;
-	force_bias_y = 0;
-	torque_bias_x = 0;
-	gyro_bias_x = 0;
-	Jmat.zeros(3,3);
-	Jmat(0,0) = J;
-	Jmat(1,1) = J;
-	Jmat(2,2) = 0.5e-9;
+	/*-----------------------------------------------*/
 
+	// User Parameters
 	freq = frequency;
 	dt = 1/freq;
+	InitRobot(q0);
 
-	// State
-	q = q0;
+	// Dependent Parameters
+	rw_vec = {0, 0, rw};
+	vw_vec.zeros(3);
+	Ks = Ks_xy * arma::eye<arma::mat>(3,3);
+	Ks(2,2) = Ks_z;
+	J = J_xy * arma::eye<arma::mat>(3,3);
+	J(2,2) = J_z;
+
+	R.zeros(3);
+	W.zeros(3);
+	T.zeros(4);
+
+	f.zeros(3);
+	tau.zeros(3);
+	f_g = { 0, 0, -g*m };
+	f_d.zeros(3);
+	tau_d.zeros(3);
+	f_disturb.zeros(3);
+	tau_disturb.zeros(3);
 }
 
 Robobee::Robobee() {}
@@ -59,102 +71,104 @@ Robobee::~Robobee()
 
 }
 
-arma::mat Robobee::BeeDynamics(arma::mat& u)
+void Robobee::InitRobot(arma::vec& q0)
 {
-	arma::mat theta = q.rows(0,2),
-						omegabody = q.rows(3,5),
-						posworld = q.rows(6,8),
-						vbody = q.rows(9,11),
-						f_l,
-						tau_c = u.rows(1,3),
-						R, W,
-						f_disturb, tau_disturb,
-						f_d, tau_d,
-						g_world, f_g,
-						theta_ks,
-						f, tau,
-						fictitious_f, fictitious_tau,
-						xdotworld, vdotbody, thetadot, omegadotbody,
-						qdot;
+	q = q0;
+	theta = q.rows(0,2);
+	omega = q.rows(3,5);
+	pos = q.rows(6,8);
+	vel = q.rows(9,11);
 
+	arma::vec c = cos(theta*0.5),
+			  s = sin(theta*0.5);
 
-	R = RotMatrix(theta);
-	W = Omega2Thetadot(theta);
+	quat = {c(0)*c(1)*c(2)+s(0)*s(1)*s(2),
+            s(0)*c(1)*c(2)-c(0)*s(1)*s(2),
+            c(0)*s(1)*c(2)+s(0)*c(1)*s(2),
+            c(0)*c(1)*s(2)-s(0)*s(1)*c(2)};
+}
 
-	f_disturb << force_bias_x << arma::endr << force_bias_y << arma::endr << 0;
-	tau_disturb << torque_bias_x << arma::endr << torque_bias_y << arma::endr << 0;
+arma::vec& Robobee::BeeDynamics(arma::vec& u)
+{
+	f.zeros();
+	f(2) = u(0,0);
+	tau = u.rows(1,3);
+	Body2World();
+	Omega2ThetaDot();
+	Quat2QuatDot();
 
-	BeeAerodynamics(vbody, omegabody, &f_d, &tau_d); // f_d, tau_d
+	// Calculate Forces & Torques
+	GetAeroForces();
+	f = f + R.t() * f_g + f_disturb + f_d;
+	tau = tau + tau_d + tau_disturb - Ks*theta;
 
-	g_world << 0 << arma::endr << 0 << arma::endr << -g*m;
-	f_g = R.t() * g_world;
-	f_l << 0 << arma::endr << 0 << arma::endr << u(0,0);
-	f = f_l + f_g + f_disturb + f_d;
-
-	theta_ks << theta(0,0) << arma::endr << theta(1,0) << arma::endr << 0;
-	tau = tau_c + tau_d + tau_disturb - ks*theta_ks;
-
-	fictitious_f = m * arma::cross(omegabody, vbody);
-	fictitious_tau = arma::cross(omegabody, Jmat * omegabody);
-
-	xdotworld = R * vbody;
-	vdotbody = 1/m * (f - fictitious_f);
-	thetadot = W * omegabody;
-	omegadotbody = arma::solve(Jmat, tau-fictitious_tau);
-
-	qdot = arma::join_vert(thetadot, omegadotbody);
-	qdot = arma::join_vert(qdot, xdotworld);
-	qdot = arma::join_vert(qdot, vdotbody);
-
-	q = q + dt*qdot;
+	// Calculate next state
+	// theta = theta + dt * (W * omega);
+	quat = quat + dt*(T*quat);
+	GetEulerAngles();
+	omega = omega + dt * arma::solve(J, tau - arma::cross(omega, J * omega));
+	pos = pos + dt * (R * vel);
+	vel = vel + dt * (1/m * (f - m * arma::cross(omega, vel)));
+	q.rows(0,2) = theta;
+	q.rows(3,5) = omega;
+	q.rows(6,8) = pos;
+	q.rows(9,11) = vel;
 
 	return q;
 }
 
-arma::mat Robobee::RotMatrix(arma::mat& eulerAngles)
+void Robobee::GetAeroForces()
+{
+	vw_vec = vel + arma::cross(omega, rw_vec);
+	f_d = -bw * vw_vec;
+	tau_d = arma::cross(rw_vec, f_d);
+}
+
+void Robobee::Body2World()
 {
 	// R matrix to convert 3-vectors in body coords to world coords
 	// v = Rv' where v is in world frame and v' is in body frame
-	double sx, sy, sz, cx, cy, cz;
-	arma::mat R;
+	double sx = sin(theta(0,0)),
+				 sy = sin(theta(1,0)),
+				 sz = sin(theta(2,0)),
+				 cx = cos(theta(0,0)),
+				 cy = cos(theta(1,0)),
+				 cz = cos(theta(2,0));
 
-	cz = cos(eulerAngles(2,0));
-	cy = cos(eulerAngles(1,0));
-	cx = cos(eulerAngles(0,0));
-	sz = sin(eulerAngles(2,0));
- 	sy = sin(eulerAngles(1,0));
-	sx = sin(eulerAngles(0,0));
-
-	R << cz*cy << cz*sy*sx - cx*sz << sz*sx + cz*cx*sy << arma::endr
-	  << cy*sz << cz*cx + sz*sy*sx << cx*sz*sy - cz*sx << arma::endr
-	  << -sy << cy*sx << cy*cx;
-
-	return R;
+	R = { {cz*cy, cz*sy*sx - cx*sz, sz*sx + cz*cx*sy},
+    		{cy*sz, cz*cx + sz*sy*sx, cx*sz*sy - cz*sx},
+    		{-sy, cy*sx, cy*cx} };
 }
 
-arma::mat Robobee::Omega2Thetadot(arma::mat& euler_theta)
+void Robobee::Omega2ThetaDot()
 {
-	double st1, ct1, tt2, ct2;
-	arma::mat W;
+	double st1 = sin(theta(0,0)),
+				 ct1 = cos(theta(0,0)),
+				 tt2 = tan(theta(1,0)),
+				 ct2 = cos(theta(1,0));
 
-	st1 = sin(euler_theta(0,0));
-	ct1 = cos(euler_theta(0,0));
-	tt2 = tan(euler_theta(1,0));
-	ct2 = cos(euler_theta(1,0));
+	W = { {1, st1*tt2, ct1*tt2},
+    		{0, ct1, -st1},
+    		{0, st1/ct2, ct1/ct2} };
+}
 
-	W << 1 << st1*tt2 << ct1*tt2 << arma::endr
-      << 0 << ct1 << -st1 << arma::endr
-      << 0 << st1/ct2 << ct1/ct2;
-
-    return W;
-  }
-
-void Robobee::BeeAerodynamics(arma::mat& v, arma::mat& omega, arma::mat *f_d, arma::mat *tau_d)
+void  Robobee::Quat2QuatDot()
 {
-	arma::mat r_vect, v_w;
+	T = { {0, -omega(0), -omega(1), -omega(2)},
+    	  {omega(0),  0,  omega(2), -omega(1)},
+    	  {omega(1), -omega(2),  0,  omega(0)},
+    	  {omega(2),  omega(1), -omega(0),  0} };
+  T = 0.5*T;
+}
 
-	r_vect << 0 << arma::endr << 0 << arma::endr << r_w;
-	v_w = v + arma::cross(omega, r_vect);
-	*f_d = -b_w * v_w;
-	*tau_d = arma::cross(r_vect, *f_d);
+void Robobee::GetEulerAngles()
+{
+	double qr = quat(0),
+		   qi = quat(1),
+		   qj = quat(2),
+		   qk = quat(3);
+
+	theta(0) = atan2( 2*(qr*qi + qj*qk), 1 - 2*(std::pow(qi,2) + std::pow(qj,2)) );
+	theta(1) = asin(2*(qr*qj - qk*qi));
+	theta(2) = atan2( 2*(qr*qk + qi*qj), 1 - 2*(std::pow(qj,2) + std::pow(qk,2)) );
 }

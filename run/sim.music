@@ -1,4 +1,4 @@
-simtime=5.0
+simtime=10.0
 
 [env]
   binary=./main
@@ -8,5 +8,5 @@ simtime=5.0
   binary=./bee.py
   np=1
 
-env.p_out -> agent.p_in [51]
+env.p_out -> agent.p_in [107]
 agent.p_out -> env.p_in [210]

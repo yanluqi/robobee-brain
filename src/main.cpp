@@ -53,27 +53,26 @@ int main(int argc, char **argv)
 ==================*/
 
     const double pi = 3.1415926535897;
-    double dynFreq = 1000,
-           dynStep = 1/dynFreq,
-           reward = 0;
 
+    arma::vec q,
+              q0,
+              q_desired(12, arma::fill::zeros),
+              u(4, arma::fill::zeros);
 
-    arma::mat q,
-              u(4,1, arma::fill::zeros),
-              q_desired;
+    q0 = { 0.2, -0.2,    0,	 	// Angular Position (Body Attached)
+             0,    0,    0, 	// Angular Velocity (Body Attached) -1,0,1
+          0.04, 0.04, 0.01, 	// Linear Postion (Inertial Frame)
+           0.1, -0.3,    0};	// Linear Velocity (Body Attached)
 
-    // Define Initial & Desired State
-    q  << 0.2 << arma::endr << -0.2 << arma::endr << 0 << arma::endr        // Angular Position (Body Attached)
-       << 0 << arma::endr << 0 << arma::endr << 1 << arma::endr             // Angular Velocity (Body Attached)
-       << 0.04 << arma::endr << 0.04 << arma::endr << 0.01 << arma::endr    // Linear Postion (Inertial Frame)
-       << 0.1 << arma::endr << -0.3 << arma::endr << 0;                     // Linear Velocity (Body Attached)
+    q_desired(8) = 0.08;
 
-    q_desired << 0 << arma::endr << 0 << arma::endr << 0 << arma::endr      // Angular Position (Body Attached)
-              << 0 << arma::endr << 0 << arma::endr << 0 << arma::endr      // Angular Velocity (Body Attached)
-              << 0 << arma::endr << 0 << arma::endr << 0.08 << arma::endr   // Linear Postion (Inertial Frame)
-              << 0 << arma::endr << 0 << arma::endr << 0;                   // Linear Velocity (Body Attached)
+    q = q0;
 
-    arma::mat q0 = q;
+    double dynFreq = 1000, dynStep = 1/dynFreq,
+           maxRew = 50, sigma = 3.0,
+           reward = maxRew/2*cos(q(0)) +
+                    maxRew*std::exp(-std::pow(q(3),2)/(2*std::pow(sigma,2))) - maxRew/2;
+
 
     // Objects Creation
     Robobee bee(q, dynFreq);     // ROBOBEE
@@ -127,8 +126,8 @@ int main(int argc, char **argv)
     /* NETWORK OUTPUT */
     int pops_size [] = {50, 60, 100}; // [critic_size, actor_size, dopa_size]
 
-    double value_param[] = {1.5, -70.0, 30},       // [A_critic, b_critic, tau_r]
-           policy_param[] = {2e-6, -2e-6},          // [F_max, F_min]
+    double value_param[] = {1.5, -100.0, 1.0},       // [A_critic, b_critic, tau_r]
+           policy_param[] = {3e-6, -3e-6},          // [F_max, F_min]
            dopa_param[] = {1, 0},                   // [A_dopa, b_dopa]
            *value,
            valueFunction = value_param[1],
@@ -144,16 +143,16 @@ int main(int argc, char **argv)
     inhandler->SetDopa(2, dopa_param);
 
     /* NETWORK INPUT */
-    double max_psg = 500,            // Max rate Poisson process for place cells
-           ranges[] = {2*pi, -6*pi}; // Range per state (negative means symmetric with respect to the origin)
+    double max_psg = 1000,            // Max rate Poisson process for place cells
+           ranges[] = {2*pi, -10}; // Range per state (negative means symmetric with respect to the origin)
 
     int idState[] = {0,3},           // Define array with States' ID you want to use
-        resState[] = {7,7};          // Number of place cells per state
+        resState[] = {7,15};          // Number of place cells per state
 
     bool types[] = {true, false};    // true->angle false->anyother
 
     Sender *outhandler = new Sender(outdata, TICK);
-    outhandler->CreatePlaceCells (2, idState, resState, types, ranges, 700);
+    outhandler->CreatePlaceCells(2, idState, resState, types, ranges, max_psg);
 
     // Mapping Input/Output Port
     outdata->map(&outindex, MUSIC::Index::GLOBAL);
@@ -162,7 +161,7 @@ int main(int argc, char **argv)
 /*==================
 |   OPENGL         |
 ==================*/
-    bool ANIMATE = false;
+    bool ANIMATE = false, REC = false;
     int length = 800, height = 600;
 	  double frameRate = 0.01;
 
@@ -186,21 +185,21 @@ int main(int argc, char **argv)
 |   RECORDING      |
 ==================*/
     // Create Saving Folder
-    time_t timer = time(NULL);
-
-    struct tm *tm_struct = localtime(&timer);
+    time_t timer;
+   	time (&timer);
+    struct tm *timeInfo = localtime(&timer);
 
     char *fname;
-    int dummy = asprintf(&fname, "Simulations/simtime_%d-%d-%d/", tm_struct->tm_hour, tm_struct->tm_min, tm_struct->tm_sec);
+    int dummy = asprintf(&fname, "Simulations/simtime_%d-%d-%d/", timeInfo->tm_hour, timeInfo->tm_min, timeInfo->tm_sec);
 
-    boost::filesystem::path dir(fname);
-    if(boost::filesystem::create_directory(dir)) {
+    std::string folder(fname), netFolder(folder + "network/");
+    boost::filesystem::path dir(folder), dirNet(netFolder);
+    if(boost::filesystem::create_directory(dir) && boost::filesystem::create_directory(dirNet)) {
         std::cout << "Success" << "\n";
     }
 
-    std::string folder(fname);
-
     double lenghtVecs = dynFreq*simt + 1;
+    arma::vec timeSim(lenghtVecs, 1);
 
     // Agent
     enum{VALUEFUN,POLICY,DOPA};
@@ -210,11 +209,14 @@ int main(int argc, char **argv)
     enum {REWARD,TDERROR};
     arma::mat environment(2, lenghtVecs);
     arma::mat state(q.size(), lenghtVecs),
-              timeSim(lenghtVecs, 1),
               control(u.size(),lenghtVecs);
 
     // OpenGL frames
-    // Frame->SetRecorder(folder + "flight.mp4");
+    if (REC)
+      Frame->SetRecorder(folder + "flight.mp4");
+
+    Iomanager manager("BeeBrain/", folder);
+    manager.SetStream("trials.dat", "out");
 
 /*========================================================================================================================*/
 
@@ -226,31 +228,49 @@ int main(int argc, char **argv)
 
     // Initialize
     int iter = 0,
-        prevStep = 0;
+        prevStep = 0,
+        trials = 0;
 
-    double tickt = runtime->time(),
-           loadDopa = 1.0,
-           startSim = 2.0,
-           clockStop = startSim,
-           dynTime = 0,
+    double tickt = runtime->time(), // Neuro-Controller/MUSIC TICK time
+           dynTime = 0,             // Simulation time
+           loadDopa = 1.0,          // Dopaminergic neurons loading time
+           startSim = 2.0,          // Simulation start time
+           punishTime = -1.0,        // Time of punish deliverying
+           clockStop = 1.0,         // Resting time between trials
+           trialTime = 0,           // Record duration of each trial
+           prevRew = 0,
            robotPos = 0,
-           cageBound = std::pow(q_desired(8,0),2),
-           omegaBound = 6*pi+pi/2,
-           thetaBound = pi;
+           thetaCheck = 0,
+           omegaCheck = 0,
+           cageBound = std::pow(q_desired(8),2),
+           thetaBound = 2*abs(ranges[0]),
+           omegaBound = abs(ranges[1]),
+           controlRate = 0.0,
+           cumulativeRew = 0.0,
+           succTrial = 0;
 
-    bool netControl = false;
+    bool netControl = true;
 
-    arma::mat prevState(12,1, arma::fill::zeros),
-              falseState(12,1, arma::fill::zeros);
+    arma::vec prevState(12, arma::fill::zeros),
+              crashState(12, arma::fill::zeros),
+              falseState(12, arma::fill::zeros);
 
     // Simulation Loop
+    manager.Print() << "Simulation start time " << timeInfo->tm_hour << ":" << timeInfo->tm_min << ":" << timeInfo->tm_sec << std::endl;
+    manager.Print() << std::setw(15) << "Trial"
+                    << std::setw(15) << "Start Time"
+                    << std::setw(15) << "End Time"
+                    << std::setw(15) << "Trial Time"
+                    << std::setw(15) << "Avg Reward"
+                    << std::setw(15) << "Control Rate" << std::endl;
     while (tickt < simt) {
 
+        // Real Time Robot Motion with 100Hz framerate
         if (ANIMATE && std::abs(remainder(tickt,frameRate)) < 0.00001){
           Frame->Clear(0.0f, 0.1f, 0.15f, 1.0f);
 			    myShader->Bind();
-			    Robot->SetPos( glm::vec3( q(7,0), q(8,0), q(6,0) ) );
-			    Robot->SetRot( glm::vec3( q(1,0), q(2,0), q(0,0) ) );
+			    Robot->SetPos( glm::vec3( q(7), q(8), q(6) ) );
+			    Robot->SetRot( glm::vec3( q(1), q(2), q(0) ) );
 			    myShader->Update(*Robot, *Cam, *Lamp);
 			    Robot->Draw();
 			    myShader->Update(*Base, *Cam, *Lamp);
@@ -258,40 +278,43 @@ int main(int argc, char **argv)
 			    Frame->Update();
         }
 
-        reward = 50*cos(state(0,int(tickt*dynFreq)));
+        // 1000Hz Classical Controller calculates 3 control torques
+        u = arma::join_vert(ctr.AltitudeControl(q), ctr.DampingControl(q));
 
+        // 100Hz Neural Controller
         if(dynTime >= TICK && std::abs(remainder(dynTime,TICK)) < 0.00001)
         {
           prevStep = tickt/dynStep;
           prevState = state.col(prevStep);
-
-          // Classical Controller calculates 3 control torques
-          u = arma::join_vert(ctr.AltitudeControl(prevState), ctr.DampingControl(prevState));
+          prevRew =  environment(REWARD, prevStep);
+          if (tickt > startSim)
+            cumulativeRew += prevRew;
 
           if (dynTime >= loadDopa)
-            outhandler->SendState(prevState, tickt);
+            outhandler->SendState(prevState, tickt); // falseState
 
           // Dopaminergic Neurons Stimulation
-          outhandler->SendReward(tdError, tickt);
+          if (tdError >= 1000.0)
+            tdError = 1000.0;
+          else if (tdError <= -1000.0)
+            tdError = -1000.0;
+          outhandler->SendReward(tdError, tickt); // 0
 
           runtime->tick();  // Music Communication: spikes are sent and received here
           tickt = runtime->time();
 
-          policy = inhandler->GetAction(tickt);       // Policy
-          dopaActivity = inhandler->GetDopa(tickt);   // Dopaminergi neurons activity
-          value = inhandler->GetValue(tickt, reward); // Value Function and TD-error
+          policy = inhandler->GetAction(tickt);        // Policy
+          dopaActivity = inhandler->GetDopa(tickt);    // Dopaminergi neurons activity
+          value = inhandler->GetValue(tickt, prevRew); // Value Function and TD-error
           valueFunction = value[0];
           tdError = value[1];
 
-          if (netControl)
-            u(1,0) = policy;
-
-          if (clockStop >= 0)
+          if (dynTime > punishTime + TICK && dynTime <= startSim)
             tdError = 0;
         }
 
         // Recording
-        timeSim(iter,0) = dynTime;
+        timeSim(iter) = dynTime;
         state.col(iter) = q;
         control.col(iter) = u;
         network(VALUEFUN, iter) = valueFunction;
@@ -300,27 +323,82 @@ int main(int argc, char **argv)
         environment(REWARD, iter) = reward;
         environment(TDERROR, iter) = tdError;
 
+        // Activate Neural Controller
+        if (netControl)
+          u(1) = controlRate*u(1) + policy;
+
         // Environment (RoboBee) generates the new state and reward
         q = bee.BeeDynamics(u);
+        reward = maxRew/2*cos(q(0)) +
+                 maxRew*std::exp(-std::pow(q(3),2)/(2*std::pow(sigma,2))) - maxRew/2;
 
-        robotPos = std::pow(q(6,0),2)/4 + std::pow(q(7,0),2)/4 + std::pow(q(8,0)-q_desired(8,0),2);
-
-        if (std::abs(q(0,0)) > thetaBound || std::abs(q(3,0)) > omegaBound || robotPos > cageBound)
-          clockStop = 0.1;
-
-        if (clockStop >= 0){
-          q = q0;
-          bee.SetState(q);
-          clockStop-=dynStep;
+        // Check Boundaries
+        if (dynTime >= startSim){
+            robotPos = std::pow(q(6),2)/8 + std::pow(q(7),2)/8 + std::pow(q(8)-q_desired(8),2);
+            thetaCheck = std::abs(q(0));
+            omegaCheck = std::abs(q(3));
+        }
+        // Crashing condition
+        if (thetaCheck > thetaBound || omegaCheck > omegaBound || robotPos > cageBound){
+          crashState = state.col(tickt/dynStep);
+          trialTime = dynTime - startSim;
+          manager.Print() << std::setw(15) << trials
+                          << std::setw(15) << startSim
+                          << std::setw(15) << dynTime
+                          << std::setw(15) << trialTime
+                          << std::setw(15) << controlRate
+                          << std::setw(15) << cumulativeRew/trialTime << std::endl;
+          if (trialTime < 1.0)
+            controlRate += 0.01;
+          punishTime = tickt + TICK;
+          startSim = punishTime + clockStop;
+          trials++;
+          thetaCheck = 0;
+          omegaCheck = 0;
+          robotPos = 0;
+          cumulativeRew = 0;
+        }
+        else if (dynTime - startSim >= 10.0 && netControl) {
+          succTrial += 1;
+          // controlRate -= 0.01;
+          trialTime = dynTime - startSim;
+          manager.Print() << std::setw(15) << trials
+                          << std::setw(15) << startSim
+                          << std::setw(15) << dynTime
+                          << std::setw(15) << trialTime
+                          << std::setw(15) << controlRate
+                          << std::setw(15) << cumulativeRew/trialTime << std::endl;
+          startSim = tickt + TICK + clockStop;
+          trials++;
+          cumulativeRew = 0;
         }
 
-        dynTime += dynStep;
+        // Stop Simulation
+        if (dynTime <= punishTime + TICK){
+          q = crashState;
+          reward = -50;
+          bee.InitRobot(q);
+          ctr.Reset();
+        }
+        else if (dynTime > punishTime + TICK && dynTime <= startSim) {
+          q = q0;
+          bee.InitRobot(q);
+          ctr.Reset();
+        }
 
+        // Increment Counters
+        dynTime += dynStep;
         iter++;
     }
 
     // End runtime phase
     runtime->finalize();
+
+    time (&timer);
+    timeInfo = localtime(&timer);
+    manager.Print() << "Simulation end time " << timeInfo->tm_hour << ":" << timeInfo->tm_min << ":" << timeInfo->tm_sec << std::endl;
+    manager.Print() << "Control Rate: " << controlRate << std::endl;
+    manager.Print() << "Successful trials: " << succTrial << std::endl;
 /*========================================================================================================================*/
 
 
@@ -335,24 +413,21 @@ int main(int argc, char **argv)
     environment.save(folder + "environment.dat",arma::raw_ascii);
 
     arma::mat netParams;
-    netParams.load("BeeBrain/matCritic_start.dat");
-    netParams.save(folder + "matCritic_start.dat",arma::raw_ascii);
+    netParams.load("BeeBrain/pCellsIDs.dat");
+    netParams.save(netFolder + "pCellsIDs.dat",arma::raw_ascii);
     netParams.clear();
-    netParams.load("BeeBrain/matActor_start.dat");
-    netParams.save(folder + "matActor_start.dat",arma::raw_ascii);
+    netParams.load("BeeBrain/criticIDs.dat");
+    netParams.save(netFolder + "criticIDs.dat",arma::raw_ascii);
     netParams.clear();
-    netParams.load("BeeBrain/matCritic_end.dat");
-    netParams.save(folder + "matCritic_end.dat",arma::raw_ascii);
+    netParams.load("BeeBrain/actorIDs.dat");
+    netParams.save(netFolder + "actorIDs.dat",arma::raw_ascii);
     netParams.clear();
-    netParams.load("BeeBrain/matActor_end.dat");
-    netParams.save(folder + "matActor_end.dat",arma::raw_ascii);
-
-    Plotter Plot(folder);
-    Plot.InState();
-    Plot.RobotPos();
-    Plot.NetActivity();
-    Plot.EnvActivity();
-    Plot.ValueMat(thetaBound, omegaBound);
+    netParams.load("BeeBrain/connToCritic.dat");
+    netParams.save(netFolder + "connToCritic.dat",arma::raw_ascii);
+    netParams.clear();
+    netParams.load("BeeBrain/connToActor.dat");
+    netParams.save(netFolder + "connToActor.dat",arma::raw_ascii);
+    netParams.clear();
 
 /*========================================================================================================================*/
 
@@ -363,7 +438,6 @@ int main(int argc, char **argv)
     delete runtime;
     delete inhandler;
     delete outhandler;
-
 
     // OpenGL
     if (ANIMATE){
@@ -377,9 +451,3 @@ int main(int argc, char **argv)
 
 /*========================================================================================================================*/
 }
-// std::string loadfolder("BeeBrain");
-// Iomanager manager(loadfolder, folder);
-// std::vector <double> criticWeights = manager.ReadData("weightsCritic.out"),
-//                      actorWeights = manager.ReadData("weightsActor.out");
-// manager.PrintData("weightsCritic.dat", &criticWeights);
-// manager.PrintData("weightsActor.dat", &actorWeights);

@@ -39,7 +39,7 @@ public:
   virtual ~Sender();
 
   void CreatePlaceCells (int numState, int *idState, int *resState, bool *typeState, double *rangeState, double maxRate);
-  void SendState (arma::mat& q, double tickt);
+  void SendState (arma::vec& q, double tickt);
   void SendReward(double reward, double tickt);
   double InputRate(
     double reward,
@@ -61,7 +61,8 @@ private:
 
 	bool *angle;
 
-  double *rangeState;
+  double *rangeState,
+         dist;
 
   // Dynamic Nested Loop Variables
   int *arrs,          // Array to move inside a level

@@ -66,27 +66,24 @@ def plotNet(net):
   plt.ylabel('Workspace Rows: 30')
   plt.title('RoboBee Brain')
 
-def weightMatrix(conn):
-  min_first = min(conn)[0]
-  max_first = max(conn)[0]
+def weightMatrix(sources, targets, weights):
+  minSourceID = int(min(sources))
+  maxSourceID = int(max(sources))
 
-  min_second = min(conn)[1]
-  max_second = max(conn)[1]
+  minTargetID = int(min(targets))
+  maxTargetID = int(max(targets))
 
+  numSources = maxSourceID - minSourceID + 1;
+  numTargets= maxTargetID - minTargetID + 1;
 
-  n_first = max_first - min_first + 1;
-  n_second = max_second - min_second + 1;
+  W = np.zeros([numSources, numTargets])
 
-  W = np.zeros([n_first, n_second])
-
-  w_conn = nest.GetStatus(conn, keys='weight')
-
-  for idx,n in enumerate(conn):
-    W[n[0]-min_first, n[1]-min_second] += w_conn[idx]
+  for idx,n in enumerate(np.column_stack((sources,targets))):
+    W[int(n[0])-minSourceID, int(n[1])-minTargetID] += weights[idx]
 
   return W
 
-def plot3Dweights(W):
+def plot3Dweights(W,title,xlabel,ylabel):
   fig = plt.figure()
   ax = fig.gca(projection='3d')
   X = np.arange(0, len(W), 1)
@@ -101,11 +98,57 @@ def plot3Dweights(W):
 
   fig.colorbar(surf, shrink=0.5, aspect=5)
 
+  plt.title(title)
+  plt.xlabel(xlabel)
+  plt.ylabel(ylabel)
+
   # plt.show()
 
-def plot2Dweights(W):
+def plot2Dweights(W,title,xlabel,ylabel):
   plt.figure()
-  plt.pcolor(W,cmap=cm.jet, vmin=-50, vmax=100)
+  plt.pcolor(W,cmap=cm.jet, vmin=0, vmax=1)
   plt.colorbar()
 
+  plt.title(title)
+  plt.xlabel(xlabel)
+  plt.ylabel(ylabel)
+
   # plt.show()
+
+def latexReshape(X,Y,Z):
+    dim = len(X)
+    a = []
+    b = []
+    c = []
+
+    for i in range(dim):
+        a = np.append(a,X);
+        b = np.append(b,np.ones(dim)*Y[i])
+        c = np.append(c,Z[i])
+
+    R = np.column_stack((a,b,c))
+
+    return R
+
+def actorWeights():
+    conn = np.loadtxt('BeeBrain/connToActor.dat')
+
+    thetas = 7;
+    x = np.array((0,1,2,3,-3,-2,-1))
+    omegas = 15;
+    actors = 60;
+    pCells = thetas*omegas
+    W = np.zeros((pCells,actors))
+    a = 1.0;
+    b = 0.0;
+    c = 100.0;
+    m = 1.0;
+    elem = ((actors-1) - 2*(m*(omegas-1)/2))/(thetas-1)
+
+    for i,x in enumerate(x):
+    	for y in range(omegas):
+    		for z in range(actors):
+    			g = -m*(y - (omegas-1)/2) - (x*elem - (actors-1)/2)
+    			W[i*omegas+y,z] = a*np.exp(-np.power(z-g,2)/c) - b + np.random.random_sample()*0.1
+    conn[:,3] = np.reshape(W,(1,pCells*actors))
+    np.savetxt('BeeBrain/connToActor.dat', conn)
