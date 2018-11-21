@@ -67,3 +67,6 @@ run/BeeBrain
 # Editors files
 RoboBrain.sublime-project
 RoboBrain.sublime-workspace
+
+# macOS files
+.DS_Store
